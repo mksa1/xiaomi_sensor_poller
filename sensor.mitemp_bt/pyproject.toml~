@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "xioami_poller"
+version = "0.1.0"
+description = ""
+authors = ["Mikael Andersen <andersen.mikael@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+#mitemp_bt = { git = "https://github.com/ratcashdev/mitemp", tag = "v0.0.3" }
+#bluepy =  "1.3.0"
+#paho-mqtt = "1.5.1"
+dynaconf = "3.1.2"
+aioblescan = "0.2.6"
+pycryptodomex = "3.9.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "^4.6"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+sensorPoller = "xioami_poller.sensorPoller:main"
