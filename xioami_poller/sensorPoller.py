@@ -1,48 +1,25 @@
 """Xiaomi passive BLE monitor integration."""
 import asyncio
-from datetime import timedelta
+from datetime import datetime
 import logging
 import statistics as sts
 import struct
 from threading import Thread
 from time import sleep
+import re
+import sys
 
 import aioblescan as aiobs
 from Cryptodome.Cipher import AES
 import voluptuous as vol
+from config import settings
 
-#from homeassistant.const import (
-#    DEVICE_CLASS_BATTERY,
-#    DEVICE_CLASS_HUMIDITY,
-#    DEVICE_CLASS_ILLUMINANCE,
-#    DEVICE_CLASS_TEMPERATURE,
-#    CONDUCTIVITY,
-#    PERCENTAGE,
-#    TEMP_CELSIUS,
-#    TEMP_FAHRENHEIT,
-#    ATTR_BATTERY_LEVEL,
-#    STATE_OFF,
-#    STATE_ON,
-#)
+from typing import (
+    Any,
+    Callable
+)
 
-#from homeassistant.components.binary_sensor import BinarySensorEntity
-#from homeassistant.components.sensor import PLATFORM_SCHEMA
-#import homeassistant.helpers.config_validation as cv
-#from homeassistant.helpers.entity import Entity
-#from homeassistant.helpers.event import track_point_in_utc_time
-#import homeassistant.util.dt as dt_util
-
-from .const import (
-    DEFAULT_ROUNDING,
-    DEFAULT_DECIMALS,
-    DEFAULT_PERIOD,
-    DEFAULT_LOG_SPIKES,
-    DEFAULT_USE_MEDIAN,
-    DEFAULT_ACTIVE_SCAN,
-    DEFAULT_HCI_INTERFACE,
-    DEFAULT_BATT_ENTITIES,
-    DEFAULT_REPORT_UNKNOWN,
-    DEFAULT_WHITELIST,
+from const import (
     CONF_ROUNDING,
     CONF_DECIMALS,
     CONF_PERIOD,
@@ -62,48 +39,46 @@ from .const import (
     CONF_HMAX,
     XIAOMI_TYPE_DICT,
     MMTS_DICT,
-#    SW_CLASS_DICT,
     CN_NAME_DICT,
+    TEMP_CELSIUS,
+    TEMP_FAHRENHEIT
 )
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger()
+_LOGGER.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+
+_LOGGER.addHandler(handler)
 
 # regex constants for configuration schema
 MAC_REGEX = "(?i)^(?:[0-9A-F]{2}[:]){5}(?:[0-9A-F]{2})$"
 AES128KEY_REGEX = "(?i)^[A-F0-9]{32}$"
 
-SENSOR_NAMES_LIST_SCHEMA = vol.Schema({cv.matches_regex(MAC_REGEX): cv.string})
+
+def matches_regex(regex: str) -> Callable[[Any], str]:
+    """Validate that the value is a string that matches a regex."""
+    compiled = re.compile(regex)
+
+    def validator(value: Any) -> str:
+        """Validate that value matches the given regex."""
+        if not isinstance(value, str):
+            raise vol.Invalid(f"not a string value: {value}")
+
+        if not compiled.match(value):
+            raise vol.Invalid(
+                f"value {value} does not match regular expression {compiled.pattern}"
+            )
+
+        return value
+
+    return validator
+
+
+SENSOR_NAMES_LIST_SCHEMA = vol.Schema({matches_regex(MAC_REGEX): str})
 
 ENCRYPTORS_LIST_SCHEMA = vol.Schema(
-    {cv.matches_regex(MAC_REGEX): cv.matches_regex(AES128KEY_REGEX)}
-)
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Optional(CONF_ROUNDING, default=DEFAULT_ROUNDING): cv.boolean,
-        vol.Optional(CONF_DECIMALS, default=DEFAULT_DECIMALS): cv.positive_int,
-        vol.Optional(CONF_PERIOD, default=DEFAULT_PERIOD): cv.positive_int,
-        vol.Optional(CONF_LOG_SPIKES, default=DEFAULT_LOG_SPIKES): cv.boolean,
-        vol.Optional(CONF_USE_MEDIAN, default=DEFAULT_USE_MEDIAN): cv.boolean,
-        vol.Optional(CONF_ACTIVE_SCAN, default=DEFAULT_ACTIVE_SCAN): cv.boolean,
-        vol.Optional(
-            CONF_HCI_INTERFACE, default=[DEFAULT_HCI_INTERFACE]
-        ): vol.All(cv.ensure_list, [cv.positive_int]),
-        vol.Optional(
-            CONF_BATT_ENTITIES, default=DEFAULT_BATT_ENTITIES
-        ): cv.boolean,
-        vol.Optional(CONF_ENCRYPTORS, default={}): ENCRYPTORS_LIST_SCHEMA,
-        vol.Optional(
-            CONF_REPORT_UNKNOWN, default=DEFAULT_REPORT_UNKNOWN
-        ): cv.boolean,
-        vol.Optional(CONF_WHITELIST, default=DEFAULT_WHITELIST): vol.Any(
-            vol.All(cv.ensure_list, [cv.matches_regex(MAC_REGEX)]), cv.boolean
-        ),
-        vol.Optional(CONF_SENSOR_NAMES, default={}): SENSOR_NAMES_LIST_SCHEMA,
-        vol.Optional(CONF_SENSOR_FAHRENHEIT, default=[]): vol.All(
-            cv.ensure_list, [cv.matches_regex(MAC_REGEX)]
-        ),
-    }
+    {matches_regex(MAC_REGEX): matches_regex(AES128KEY_REGEX)}
 )
 
 # Structured objects for data conversions
@@ -376,9 +351,9 @@ def parse_raw_message(data, aeskeyslist, whitelist, report_unknown=False):
 def sensor_name(config, mac, sensor_type):
     """Set sensor name."""
     fmac = ":".join(mac[i : i + 2] for i in range(0, len(mac), 2))
-    sensor_names_dict = {
-        k.upper(): v for k, v in config[CONF_SENSOR_NAMES].items()
-    }
+    sensor_names_dict = []
+    for sensors in config[CONF_SENSOR_NAMES]:
+        sensor_names_dict.append(sensors.name)
     if fmac in sensor_names_dict:
         custom_name = sensor_names_dict.get(fmac)
         _LOGGER.debug(
@@ -422,8 +397,8 @@ class BLEScanner:
 
     def start(self, config):
         """Start receiving broadcasts."""
-        active_scan = config[CONF_ACTIVE_SCAN]
-        hci_interfaces = config[CONF_HCI_INTERFACE]
+        active_scan = config.as_bool(CONF_ACTIVE_SCAN)
+        hci_interfaces = config(CONF_HCI_INTERFACE)
         self.hcidump_data.clear()
         _LOGGER.debug("Spawning HCIdump thread(s).")
         for hci_int in hci_interfaces:
@@ -458,7 +433,7 @@ class BLEScanner:
         self.stop()
 
 
-def setup_platform(config, add_entities, discovery_info=None):
+def setup_platform(config, discovery_info=None):
     """Set up the sensor platform."""
 
     def reverse_mac(rmac):
@@ -481,7 +456,6 @@ def setup_platform(config, add_entities, discovery_info=None):
     _LOGGER.debug("Starting")
     firstrun = True
     scanner = BLEScanner()
-    #hass.bus.listen("homeassistant_stop", scanner.shutdown_handler)
     scanner.start(config)
     sensors_by_mac = {}
     if config[CONF_REPORT_UNKNOWN]:
@@ -498,10 +472,10 @@ def setup_platform(config, add_entities, discovery_info=None):
     whitelist = []
     if isinstance(config[CONF_WHITELIST], bool):
         if config[CONF_WHITELIST] is True:
-            for mac in config[CONF_ENCRYPTORS]:
-                whitelist.append(mac)
-            for mac in config[CONF_SENSOR_NAMES]:
-                whitelist.append(mac)
+            for encryptors in config[CONF_ENCRYPTORS]:
+                whitelist.append(encryptors.mac)
+            for sensors in config[CONF_SENSOR_NAMES]:
+                whitelist.append(sensors.mac)
     if isinstance(config[CONF_WHITELIST], list):
         for mac in config[CONF_WHITELIST]:
             whitelist.append(mac)
@@ -851,16 +825,17 @@ def setup_platform(config, add_entities, discovery_info=None):
             discover_ble_devices(config, aeskeys, whitelist)
         except RuntimeError as error:
             _LOGGER.error("Error during Bluetooth LE scan: %s", error)
-        track_point_in_utc_time(
-            hass, update_ble, dt_util.utcnow() + timedelta(seconds=period)
-        )
+        # track_point_in_utc_time(
+        #    hass, update_ble,datetime.utcnow() + timedelta(seconds=period)
+        # )
 
-    update_ble(dt_util.utcnow())
+    update_ble(datetime.utcnow())
+    update_ble(datetime.utcnow())
     # Return successful setup
     return True
 
 
-class MeasuringSensor(Entity):
+class MeasuringSensor():
     """Base class for measuring sensor entity"""
 
     def __init__(self, config, mac):
@@ -1032,7 +1007,7 @@ class ConsumableSensor(MeasuringSensor):
         return "mdi:mdi-recycle-variant"
 
 
-class SwitchBinarySensor(BinarySensorEntity):
+class SwitchBinarySensor():
     """Representation of a Sensor."""
 
     def __init__(self, config, mac):
@@ -1084,24 +1059,24 @@ class SwitchBinarySensor(BinarySensorEntity):
         """Force update."""
         return True
 
-
 def main():
+    setup_platform(settings)
     #Setup MQTT connection
-    mqtt_client = init_mqtt_connection()
+    #mqtt_client = init_mqtt_connection()
 
     
     # Scan for Xiaomi temp devices
-    devices = scan()
+    #devices = scan()
 
     # Tuple consisting of (device_mac, poller)
-    pollers = []
+    #pollers = []
     # Create poller for each device
-    for device in devices:
-        poller = MiTempBtPoller(device[0], BluepyBackend, 20.0)
-        pollers.append((device[0],poller))
+    #for device in devices:
+    #    poller = MiTempBtPoller(device[0], BluepyBackend, 20.0)
+    #    pollers.append((device[0],poller))
 
     # Continually loop through pollers and submit data every BLE_POLLING_INTERVAL seconds
-    fetch_sensor_data_loop(pollers, mqtt_client)
+    #fetch_sensor_data_loop(pollers, mqtt_client)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,6 @@
+{
+    "python.pythonPath": "/home/pi/.cache/pypoetry/virtualenvs/xioami-poller-_2SAfTnI-py3.7/bin/python3",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true
+}

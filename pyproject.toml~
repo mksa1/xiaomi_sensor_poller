@@ -13,6 +13,8 @@ dynaconf = "3.1.2"
 aioblescan = "0.2.6"
 pycryptodomex = "3.9.9"
 voluptuous = "0.12.0"
+dt-utils="0.0.3"
+numpy="1.18.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

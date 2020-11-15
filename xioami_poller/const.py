@@ -1,7 +1,7 @@
 """Constants for the Xiaomi passive BLE monitor sensor integration."""
-#from homeassistant.const import (
+# from homeassistant.const import (
 #    DEVICE_CLASS_POWER,
-#)
+# )
 
 # Configuration options
 CONF_ROUNDING = "rounding"
@@ -18,7 +18,7 @@ CONF_WHITELIST = "whitelist"
 CONF_SENSOR_NAMES = "sensor_names"
 CONF_SENSOR_FAHRENHEIT = "sensor_fahrenheit"
 
-# Default values for configuration options
+# Default values for config
 DEFAULT_ROUNDING = True
 DEFAULT_DECIMALS = 1
 DEFAULT_PERIOD = 60
@@ -33,7 +33,13 @@ DEFAULT_WHITELIST = False
 
 """Fixed constants."""
 
-# Sensor measurement limits to exclude erroneous spikes from the results (temperature in °C)
+ATTR_TEMPERATURE = "temperature"
+TEMP_CELSIUS = "°C"
+TEMP_FAHRENHEIT = "°F"
+
+# Sensor measurement limits
+# to exclude erroneous spikes
+# from the results (temperature in °C)
 CONF_TMIN = -40.0
 CONF_TMAX = 60.0
 CONF_HMIN = 0.0
@@ -57,29 +63,31 @@ XIAOMI_TYPE_DICT = {
 
 
 # Sensor type indexes dictionary
-# Temperature, Humidity, Moisture, Conductivity, Illuminance, Formaldehyde, Consumable, Switch, Battery
+# Temperature, Humidity, Moisture,
+# Conductivity, Illuminance, Formaldehyde,
+# Consumable, Switch, Battery
 # Measurement type T  H  M  C  I  F  Cn Sw B   9 - no measurement
 MMTS_DICT = {
-    'HHCCJCY01' : [0, 9, 1, 2, 3, 9, 9, 9, 9],
-    'GCLS002'   : [0, 9, 1, 2, 3, 9, 9, 9, 9],
+    'HHCCJCY01': [0, 9, 1, 2, 3, 9, 9, 9, 9],
+    'GCLS002': [0, 9, 1, 2, 3, 9, 9, 9, 9],
     'HHCCPOT002': [9, 9, 0, 1, 9, 9, 9, 9, 9],
-    'LYWSDCGQ'  : [0, 1, 9, 9, 9, 9, 9, 9, 2],
-    'LYWSD02'   : [0, 1, 9, 9, 9, 9, 9, 9, 2],
-    'CGG1'      : [0, 1, 9, 9, 9, 9, 9, 9, 2],
+    'LYWSDCGQ': [0, 1, 9, 9, 9, 9, 9, 9, 2],
+    'LYWSD02': [0, 1, 9, 9, 9, 9, 9, 9, 2],
+    'CGG1': [0, 1, 9, 9, 9, 9, 9, 9, 2],
     'LYWSD03MMC': [0, 1, 9, 9, 9, 9, 9, 9, 2],
-    'CGD1'      : [0, 1, 9, 9, 9, 9, 9, 9, 2],
-    'JQJCY01YM' : [0, 1, 9, 9, 9, 2, 9, 9, 3],
-    'WX08ZM'    : [9, 9, 9, 9, 9, 9, 0, 1, 2],
-    'MHO-C401'  : [0, 1, 9, 9, 9, 9, 9, 9, 2],
-    'MHO-C303'  : [0, 1, 9, 9, 9, 9, 9, 9, 2]
+    'CGD1': [0, 1, 9, 9, 9, 9, 9, 9, 2],
+    'JQJCY01YM': [0, 1, 9, 9, 9, 2, 9, 9, 3],
+    'WX08ZM': [9, 9, 9, 9, 9, 9, 0, 1, 2],
+    'MHO-C401': [0, 1, 9, 9, 9, 9, 9, 9, 2],
+    'MHO-C303': [0, 1, 9, 9, 9, 9, 9, 9, 2]
 }
 
 # Switch binary sensor classes dict
-#SW_CLASS_DICT = {
+# SW_CLASS_DICT = {
 #    'WX08ZM'    : DEVICE_CLASS_POWER
-#}
+# }
 
 # Consumable sensor name dict
 CN_NAME_DICT = {
-    'WX08ZM'    : "tablet_"
+    'WX08ZM': "tablet_"
 }

@@ -1,0 +1,22 @@
+mqtt_server="192.168.1.79"
+mqtt_user="mqtt"
+mqtt_port=1883
+mqtt_timeout=60
+mqtt_topic_prefix="home/xioami_sensor/"
+
+rounding=true
+decimals=1
+period=60
+log_spikes=false
+use_median=false
+active_scan=false
+hci_interface=[ 0 ]
+batt_entities=false
+encryptors= {}
+report_unknown=false
+whitelist=true
+sensor_fahrenheit= {}
+[[sensor_names]]
+name='LivingRoom'
+mac='4C:65:A8:DB:A4:4E'
+
