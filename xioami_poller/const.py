@@ -1,7 +1,4 @@
 """Constants for the Xiaomi passive BLE monitor sensor integration."""
-# from homeassistant.const import (
-#    DEVICE_CLASS_POWER,
-# )
 
 # Configuration options
 CONF_ROUNDING = "rounding"
@@ -33,6 +30,17 @@ DEFAULT_WHITELIST = False
 
 """Fixed constants."""
 
+# Conductivity units
+CONDUCTIVITY: str = "µS/cm"
+
+# Percentage units
+PERCENTAGE = "%"
+
+# #### STATES ####
+STATE_ON = "on"
+STATE_OFF = "off"
+
+ATTR_BATTERY_LEVEL = "battery_level"
 ATTR_TEMPERATURE = "temperature"
 TEMP_CELSIUS = "°C"
 TEMP_FAHRENHEIT = "°F"
@@ -83,9 +91,9 @@ MMTS_DICT = {
 }
 
 # Switch binary sensor classes dict
-# SW_CLASS_DICT = {
-#    'WX08ZM'    : DEVICE_CLASS_POWER
-# }
+SW_CLASS_DICT = {
+    'WX08ZM': "power"
+}
 
 # Consumable sensor name dict
 CN_NAME_DICT = {

@@ -22,7 +22,6 @@ from typing import (
 from const import (
     CONF_ROUNDING,
     CONF_DECIMALS,
-    CONF_PERIOD,
     CONF_LOG_SPIKES,
     CONF_USE_MEDIAN,
     CONF_ACTIVE_SCAN,
@@ -41,7 +40,13 @@ from const import (
     MMTS_DICT,
     CN_NAME_DICT,
     TEMP_CELSIUS,
-    TEMP_FAHRENHEIT
+    TEMP_FAHRENHEIT,
+    SW_CLASS_DICT,
+    ATTR_BATTERY_LEVEL,
+    CONDUCTIVITY,
+    PERCENTAGE,
+    STATE_ON,
+    STATE_OFF
 )
 
 _LOGGER = logging.getLogger()
@@ -350,7 +355,7 @@ def parse_raw_message(data, aeskeyslist, whitelist, report_unknown=False):
 
 def sensor_name(config, mac, sensor_type):
     """Set sensor name."""
-    fmac = ":".join(mac[i : i + 2] for i in range(0, len(mac), 2))
+    fmac = ":".join(mac[i: i + 2] for i in range(0, len(mac), 2))
     sensor_names_dict = []
     for sensors in config[CONF_SENSOR_NAMES]:
         sensor_names_dict.append(sensors.name)
@@ -394,6 +399,8 @@ class BLEScanner:
 
     dumpthreads = []
     hcidump_data = []
+    sensors_by_mac = {}
+    whitelist = []
 
     def start(self, config):
         """Start receiving broadcasts."""
@@ -432,79 +439,81 @@ class BLEScanner:
         _LOGGER.debug("Running homeassistant_stop event handler: %s", event)
         self.stop()
 
-
-def setup_platform(config, discovery_info=None):
-    """Set up the sensor platform."""
-
-    def reverse_mac(rmac):
-        """Change LE order to BE."""
-        if len(rmac) != 12:
-            return None
-        return rmac[10:12] + rmac[8:10] + rmac[6:8] + rmac[4:6] + rmac[2:4] + rmac[0:2]
-
-    def lpacket(mac, packet=None):
+    def lpacket(self, mac, packet=None):
         """Last_packet static storage."""
         if packet is not None:
-            lpacket.cntr[mac] = packet
+            self.lpacket_cntr[mac] = packet
         else:
             try:
-                cntr = lpacket.cntr[mac]
+                cntr = self.lpacket_cntr[mac]
             except KeyError:
                 cntr = None
             return cntr
 
-    _LOGGER.debug("Starting")
-    firstrun = True
-    scanner = BLEScanner()
-    scanner.start(config)
-    sensors_by_mac = {}
-    if config[CONF_REPORT_UNKNOWN]:
-        _LOGGER.info(
-            "Attention! Option report_unknown is enabled, be ready for a huge output..."
-        )
-    # prepare device:key lists to speedup parser
-    aeskeys = {}
-    for mac in config[CONF_ENCRYPTORS]:
-        p_mac = bytes.fromhex(reverse_mac(mac.replace(":", "")).lower())
-        p_key = bytes.fromhex(config[CONF_ENCRYPTORS][mac].lower())
-        aeskeys[p_mac] = p_key
-    _LOGGER.debug("%s encryptors mac:key pairs loaded.", len(aeskeys))
-    whitelist = []
-    if isinstance(config[CONF_WHITELIST], bool):
-        if config[CONF_WHITELIST] is True:
-            for encryptors in config[CONF_ENCRYPTORS]:
-                whitelist.append(encryptors.mac)
-            for sensors in config[CONF_SENSOR_NAMES]:
-                whitelist.append(sensors.mac)
-    if isinstance(config[CONF_WHITELIST], list):
-        for mac in config[CONF_WHITELIST]:
-            whitelist.append(mac)
-        for mac in config[CONF_ENCRYPTORS]:
-            whitelist.append(mac)
-        for mac in config[CONF_SENSOR_NAMES]:
-            whitelist.append(mac)
-    # remove duplicates from whitelist
-    whitelist = list(dict.fromkeys(whitelist))
-    _LOGGER.debug("whitelist: [%s]", ', '.join(whitelist).upper())
-    for i, mac in enumerate(whitelist):
-        whitelist[i] = bytes.fromhex(reverse_mac(mac.replace(":", "")).lower())
-    _LOGGER.debug("%s whitelist item(s) loaded.", len(whitelist))
-    lpacket.cntr = {}
-    sleep(1)
+    def print_sensor_stats(self):
+        for key in self.sensors_by_mac:
+            print(key, '->', self.sensors_by_mac[key])
+            for sensor in self.sensors_by_mac[key]:
+                print(sensor.device_state_attributes)
 
-    def calc_update_state(
-        entity_to_update,
-        sensor_mac,
-        config,
-        measurements_list,
-        stype=None,
-        fdec=0,
-    ):
+    def setup_platform(self, config, discovery_info=None):
+        """Set up the sensor platform."""
+        self.config = config
+
+        def reverse_mac(rmac):
+            """Change LE order to BE."""
+            if len(rmac) != 12:
+                return None
+            return rmac[10:12] + rmac[8:10] + rmac[6:8] + rmac[4:6] + rmac[2:4] + rmac[0:2]
+
+        _LOGGER.debug("Starting")
+        self.firstrun = True
+        self.start(config)
+        if config[CONF_REPORT_UNKNOWN]:
+            _LOGGER.info(
+                "Attention! Option report_unknown is enabled, be ready for a huge output..."
+            )
+        # prepare device:key lists to speedup parser
+        aeskeys = {}
+        for mac in config[CONF_ENCRYPTORS]:
+            p_mac = bytes.fromhex(reverse_mac(mac.replace(":", "")).lower())
+            p_key = bytes.fromhex(config[CONF_ENCRYPTORS][mac].lower())
+            aeskeys[p_mac] = p_key
+        self.aeskeyslist = aeskeys
+        _LOGGER.debug("%s encryptors mac:key pairs loaded.", len(aeskeys))
+        whitelist = []
+        if isinstance(config[CONF_WHITELIST], bool):
+            if config[CONF_WHITELIST] is True:
+                for encryptors in config[CONF_ENCRYPTORS]:
+                    whitelist.append(encryptors.mac)
+                for sensors in config[CONF_SENSOR_NAMES]:
+                    whitelist.append(sensors.mac)
+        if isinstance(config[CONF_WHITELIST], list):
+            for mac in config[CONF_WHITELIST]:
+                whitelist.append(mac)
+            for mac in config[CONF_ENCRYPTORS]:
+                whitelist.append(mac)
+            for mac in config[CONF_SENSOR_NAMES]:
+                whitelist.append(mac)
+        # remove duplicates from whitelist
+        whitelist = list(dict.fromkeys(whitelist))
+        _LOGGER.debug("whitelist: [%s]", ', '.join(whitelist).upper())
+        for i, mac in enumerate(whitelist):
+            whitelist[i] = bytes.fromhex(reverse_mac(mac.replace(":", "")).lower())
+        _LOGGER.debug("%s whitelist item(s) loaded.", len(whitelist))
+        self.lpacket_cntr = {}
+        sleep(1)
+        self.whitelist = whitelist
+        self.update_ble(datetime.utcnow())
+        # Return successful setup
+        return True
+
+    def calc_update_state(self, entity_to_update, sensor_mac, measurements_list, stype=None, fdec=0):
         """Averages according to options and updates the entity state."""
         textattr = ""
         success = False
         error = ""
-        rdecimals = config[CONF_DECIMALS]
+        rdecimals = self.config[CONF_DECIMALS]
         # formaldehyde decimals workaround
         if fdec > 0:
             rdecimals = fdec
@@ -514,13 +523,13 @@ def setup_platform(config, discovery_info=None):
         else:
             measurements = measurements_list
         try:
-            if config[CONF_ROUNDING]:
+            if self.config[CONF_ROUNDING]:
                 state_median = round(sts.median(measurements), rdecimals)
                 state_mean = round(sts.mean(measurements), rdecimals)
             else:
                 state_median = sts.median(measurements)
                 state_mean = sts.mean(measurements)
-            if config[CONF_USE_MEDIAN]:
+            if self.config[CONF_USE_MEDIAN]:
                 textattr = "last median of"
                 setattr(entity_to_update, "_state", state_median)
             else:
@@ -535,7 +544,6 @@ def setup_platform(config, discovery_info=None):
             getattr(entity_to_update, "_device_state_attributes")[
                 "mean"
             ] = state_mean
-            entity_to_update.schedule_update_ha_state()
             success = True
         except (AttributeError, AssertionError):
             _LOGGER.debug("Sensor %s not yet ready for update", sensor_mac)
@@ -548,15 +556,22 @@ def setup_platform(config, discovery_info=None):
             error = err
         return success, error
 
-    def discover_ble_devices(config, aeskeyslist, whitelist):
+    def update_ble(self, now):
+        """Lookup Bluetooth LE devices and update status."""
+        _LOGGER.debug("update_ble called")
+        try:
+            self.discover_ble_devices()
+        except RuntimeError as error:
+            _LOGGER.error("Error during Bluetooth LE scan: %s", error)
+
+    def discover_ble_devices(self):
         """Discover Bluetooth LE devices."""
-        nonlocal firstrun
-        if firstrun:
-            firstrun = False
+        if self.firstrun:
+            self.firstrun = False
             _LOGGER.debug("First run, skip parsing.")
             return []
         _LOGGER.debug("Discovering Bluetooth LE devices")
-        log_spikes = config[CONF_LOG_SPIKES]
+        log_spikes = self.config[CONF_LOG_SPIKES]
         _LOGGER.debug("Time to analyze...")
         stype = {}
         hum_m_data = {}
@@ -571,30 +586,30 @@ def setup_platform(config, discovery_info=None):
         rssi = {}
         macs = {}  # all found macs
         _LOGGER.debug("Getting data from HCIdump thread")
-        jres = scanner.stop()
+        jres = self.stop()
         if jres is False:
             _LOGGER.error("HCIdump thread(s) is not completed, interrupting data processing!")
             return []
-        hcidump_raw = [*scanner.hcidump_data]
-        scanner.start(config)  # minimum delay between HCIdumps
-        report_unknown = config[CONF_REPORT_UNKNOWN]
+        hcidump_raw = [*self.hcidump_data]
+        self.start(self.config)  # minimum delay between HCIdumps
+        report_unknown = self.config[CONF_REPORT_UNKNOWN]
         for msg in hcidump_raw:
-            data = parse_raw_message(msg, aeskeyslist, whitelist, report_unknown)
+            data = parse_raw_message(msg, self.aeskeyslist, self.whitelist, report_unknown)
             if data and "mac" in data:
                 # ignore duplicated message
                 packet = data["packet"]
                 mac = data["mac"]
-                prev_packet = lpacket(mac)
+                prev_packet = self.lpacket(mac)
                 if prev_packet == packet:
                     # _LOGGER.debug("DUPLICATE: %s, IGNORING!", data)
                     continue
-                lpacket(mac, packet)
+                self.lpacket(mac, packet)
                 # store found readings per device
                 if "temperature" in data:
                     if (
-                        temperature_limit(config, mac, CONF_TMAX)
+                        temperature_limit(self.config, mac, CONF_TMAX)
                         >= data["temperature"]
-                        >= temperature_limit(config, mac, CONF_TMIN)
+                        >= temperature_limit(self.config, mac, CONF_TMIN)
                     ):
                         if mac not in temp_m_data:
                             temp_m_data[mac] = []
@@ -662,41 +677,41 @@ def setup_platform(config, discovery_info=None):
             t_i, h_i, m_i, c_i, i_i, f_i, cn_i, sw_i, b_i = MMTS_DICT[sensortype]
             # if necessary, create a list of entities
             # according to the sensor implementation
-            if mac in sensors_by_mac:
-                sensors = sensors_by_mac[mac]
+            if mac in self.sensors_by_mac:
+                sensors = self.sensors_by_mac[mac]
             else:
                 sensors = []
                 if t_i != 9:
-                    sensors.insert(t_i, TemperatureSensor(config, mac))
+                    sensors.insert(t_i, TemperatureSensor(self.config, mac))
                 if h_i != 9:
-                    sensors.insert(h_i, HumiditySensor(config, mac))
+                    sensors.insert(h_i, HumiditySensor(self.config, mac))
                 if m_i != 9:
-                    sensors.insert(m_i, MoistureSensor(config, mac))
+                    sensors.insert(m_i, MoistureSensor(self.config, mac))
                 if c_i != 9:
-                    sensors.insert(c_i, ConductivitySensor(config, mac))
+                    sensors.insert(c_i, ConductivitySensor(self.config, mac))
                 if i_i != 9:
-                    sensors.insert(i_i, IlluminanceSensor(config, mac))
+                    sensors.insert(i_i, IlluminanceSensor(self.config, mac))
                 if f_i != 9:
-                    sensors.insert(f_i, FormaldehydeSensor(config, mac))
+                    sensors.insert(f_i, FormaldehydeSensor(self.config, mac))
                 if cn_i != 9:
-                    sensors.insert(cn_i, ConsumableSensor(config, mac))
+                    sensors.insert(cn_i, ConsumableSensor(self.config, mac))
                     try:
                         setattr(sensors[cn_i], "_cn_name", CN_NAME_DICT[sensortype])
                     except KeyError:
                         pass
                 if sw_i != 9:
-                    sensors.insert(sw_i, SwitchBinarySensor(config, mac))
+                    sensors.insert(sw_i, SwitchBinarySensor(self.config, mac))
                     try:
                         setattr(sensors[sw_i], "_swclass", SW_CLASS_DICT[sensortype])
                     except KeyError:
                         pass
-                if config[CONF_BATT_ENTITIES] and (b_i != 9):
-                    sensors.insert(b_i, BatterySensor(config, mac))
-                sensors_by_mac[mac] = sensors
-                add_entities(sensors)
+                if self.config[CONF_BATT_ENTITIES] and (b_i != 9):
+                    sensors.insert(b_i, BatterySensor(self.config, mac))
+                self.sensors_by_mac[mac] = sensors
+                # add_entities(sensors)
             # append joint attributes
             for sensor in sensors:
-                getattr(sensor, "_device_state_attributes")["last packet id"] = lpacket(
+                getattr(sensor, "_device_state_attributes")["last packet id"] = self.lpacket(
                     mac
                 )
                 getattr(sensor, "_device_state_attributes")["rssi"] = round(
@@ -713,7 +728,7 @@ def setup_platform(config, discovery_info=None):
 
             # averaging and states updating
             if mac in batt:
-                if config[CONF_BATT_ENTITIES]:
+                if self.config[CONF_BATT_ENTITIES]:
                     setattr(sensors[b_i], "_state", batt[mac])
                     try:
                         sensors[b_i].schedule_update_ha_state()
@@ -729,8 +744,8 @@ def setup_platform(config, discovery_info=None):
                         )
                         _LOGGER.error(err)
             if mac in temp_m_data:
-                success, error = calc_update_state(
-                    sensors[t_i], mac, config, temp_m_data[mac]
+                success, error = self.calc_update_state(
+                    sensors[t_i], mac, temp_m_data[mac]
                 )
                 if not success:
                     _LOGGER.error(
@@ -738,15 +753,15 @@ def setup_platform(config, discovery_info=None):
                     )
                     _LOGGER.error(error)
             if mac in hum_m_data:
-                success, error = calc_update_state(
-                    sensors[h_i], mac, config, hum_m_data[mac], sensortype
+                success, error = self.calc_update_state(
+                    sensors[h_i], mac, hum_m_data[mac], sensortype
                 )
                 if not success:
                     _LOGGER.error("Sensor %s (%s, hum.) update error:", mac, sensortype)
                     _LOGGER.error(error)
             if mac in moist_m_data:
-                success, error = calc_update_state(
-                    sensors[m_i], mac, config, moist_m_data[mac]
+                success, error = self.calc_update_state(
+                    sensors[m_i], mac, moist_m_data[mac]
                 )
                 if not success:
                     _LOGGER.error(
@@ -754,8 +769,8 @@ def setup_platform(config, discovery_info=None):
                     )
                     _LOGGER.error(error)
             if mac in cond_m_data:
-                success, error = calc_update_state(
-                    sensors[c_i], mac, config, cond_m_data[mac]
+                success, error = self.calc_update_state(
+                    sensors[c_i], mac, cond_m_data[mac]
                 )
                 if not success:
                     _LOGGER.error(
@@ -763,8 +778,8 @@ def setup_platform(config, discovery_info=None):
                     )
                     _LOGGER.error(error)
             if mac in illum_m_data:
-                success, error = calc_update_state(
-                    sensors[i_i], mac, config, illum_m_data[mac]
+                success, error = self.calc_update_state(
+                    sensors[i_i], mac, illum_m_data[mac]
                 )
                 if not success:
                     _LOGGER.error(
@@ -772,8 +787,8 @@ def setup_platform(config, discovery_info=None):
                     )
                     _LOGGER.error(error)
             if mac in formaldehyde_m_data:
-                success, error = calc_update_state(
-                    sensors[f_i], mac, config, formaldehyde_m_data[mac], fdec=3
+                success, error = self.calc_update_state(
+                    sensors[f_i], mac, formaldehyde_m_data[mac], fdec=3
                 )
                 if not success:
                     _LOGGER.error(
@@ -816,23 +831,6 @@ def setup_platform(config, discovery_info=None):
             len(macs),
         )
         return []
-
-    def update_ble(now):
-        """Lookup Bluetooth LE devices and update status."""
-        period = config[CONF_PERIOD]
-        _LOGGER.debug("update_ble called")
-        try:
-            discover_ble_devices(config, aeskeys, whitelist)
-        except RuntimeError as error:
-            _LOGGER.error("Error during Bluetooth LE scan: %s", error)
-        # track_point_in_utc_time(
-        #    hass, update_ble,datetime.utcnow() + timedelta(seconds=period)
-        # )
-
-    update_ble(datetime.utcnow())
-    update_ble(datetime.utcnow())
-    # Return successful setup
-    return True
 
 
 class MeasuringSensor():
@@ -898,7 +896,7 @@ class TemperatureSensor(MeasuringSensor):
         self._name = "mi temperature {}".format(self._sensor_name)
         self._unique_id = "t_" + self._sensor_name
         self._unit_of_measurement = unit_of_measurement(config, mac)
-        self._device_class = DEVICE_CLASS_TEMPERATURE
+        self._device_class = None
 
 
 class HumiditySensor(MeasuringSensor):
@@ -911,7 +909,7 @@ class HumiditySensor(MeasuringSensor):
         self._name = "mi humidity {}".format(self._sensor_name)
         self._unique_id = "h_" + self._sensor_name
         self._unit_of_measurement = PERCENTAGE
-        self._device_class = DEVICE_CLASS_HUMIDITY
+        self._device_class = None
 
 
 class MoistureSensor(MeasuringSensor):
@@ -924,7 +922,7 @@ class MoistureSensor(MeasuringSensor):
         self._name = "mi moisture {}".format(self._sensor_name)
         self._unique_id = "m_" + self._sensor_name
         self._unit_of_measurement = PERCENTAGE
-        self._device_class = DEVICE_CLASS_HUMIDITY
+        self._device_class = None
 
 
 class ConductivitySensor(MeasuringSensor):
@@ -955,7 +953,7 @@ class IlluminanceSensor(MeasuringSensor):
         self._name = "mi llluminance {}".format(self._sensor_name)
         self._unique_id = "l_" + self._sensor_name
         self._unit_of_measurement = "lx"
-        self._device_class = DEVICE_CLASS_ILLUMINANCE
+        self._device_class = None
 
 
 class FormaldehydeSensor(MeasuringSensor):
@@ -986,7 +984,7 @@ class BatterySensor(MeasuringSensor):
         self._name = "mi battery {}".format(self._sensor_name)
         self._unique_id = "batt__" + self._sensor_name
         self._unit_of_measurement = PERCENTAGE
-        self._device_class = DEVICE_CLASS_BATTERY
+        self._device_class = None
 
 
 class ConsumableSensor(MeasuringSensor):
@@ -1059,24 +1057,34 @@ class SwitchBinarySensor():
         """Force update."""
         return True
 
-def main():
-    setup_platform(settings)
-    #Setup MQTT connection
-    #mqtt_client = init_mqtt_connection()
 
-    
+def main():
+    scanner = BLEScanner()
+    # Initialize scanner platform
+    scanner.setup_platform(settings)
+
+    sleep(10)
+
+    while (True):
+        scanner.update_ble(datetime.utcnow())
+        scanner.print_sensor_stats()
+        sleep(30)
+
+    # Setup MQTT connection
+    mqtt_client = init_mqtt_connection()
     # Scan for Xiaomi temp devices
-    #devices = scan()
+    # devices = scan()
 
     # Tuple consisting of (device_mac, poller)
-    #pollers = []
+    # pollers = []
     # Create poller for each device
-    #for device in devices:
+    # for device in devices:
     #    poller = MiTempBtPoller(device[0], BluepyBackend, 20.0)
     #    pollers.append((device[0],poller))
 
     # Continually loop through pollers and submit data every BLE_POLLING_INTERVAL seconds
-    #fetch_sensor_data_loop(pollers, mqtt_client)
+    # fetch_sensor_data_loop(pollers, mqtt_client)
+
 
 if __name__ == "__main__":
     main()
