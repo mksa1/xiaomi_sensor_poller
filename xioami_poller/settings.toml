@@ -3,6 +3,7 @@ mqtt_user="mqtt"
 mqtt_port=1883
 mqtt_timeout=60
 mqtt_topic_prefix="home/xioami_sensor/"
+update_interval=30
 
 rounding=true
 decimals=1
@@ -11,7 +12,7 @@ log_spikes=false
 use_median=false
 active_scan=false
 hci_interface=[ 0 ]
-batt_entities=false
+batt_entities=true
 encryptors= {}
 report_unknown=false
 whitelist=true

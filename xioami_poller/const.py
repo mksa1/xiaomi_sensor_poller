@@ -1,5 +1,21 @@
 """Constants for the Xiaomi passive BLE monitor sensor integration."""
 
+# #### DEVICE CLASSES ####
+DEVICE_CLASS_BATTERY = "battery"
+DEVICE_CLASS_HUMIDITY = "humidity"
+DEVICE_CLASS_ILLUMINANCE = "illuminance"
+DEVICE_CLASS_FORMALDEHYDE = "formaldehyde"
+DEVICE_CLASS_CONDUCTIVITY = "conductivity"
+DEVICE_CLASS_SIGNAL_STRENGTH = "signal_strength"
+DEVICE_CLASS_TEMPERATURE = "temperature"
+DEVICE_CLASS_TIMESTAMP = "timestamp"
+DEVICE_CLASS_PRESSURE = "pressure"
+DEVICE_CLASS_POWER = "power"
+DEVICE_CLASS_CURRENT = "current"
+DEVICE_CLASS_ENERGY = "energy"
+DEVICE_CLASS_POWER_FACTOR = "power_factor"
+DEVICE_CLASS_VOLTAGE = "voltage"
+
 # Configuration options
 CONF_ROUNDING = "rounding"
 CONF_DECIMALS = "decimals"
@@ -27,6 +43,7 @@ DEFAULT_BATT_ENTITIES = False
 DEFAULT_REPORT_UNKNOWN = False
 DEFAULT_WHITELIST = False
 
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 """Fixed constants."""
 

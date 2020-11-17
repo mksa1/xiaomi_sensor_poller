@@ -8,6 +8,8 @@ from threading import Thread
 from time import sleep
 import re
 import sys
+import paho.mqtt.client as mqtt
+import json
 
 import aioblescan as aiobs
 from Cryptodome.Cipher import AES
@@ -20,6 +22,13 @@ from typing import (
 )
 
 from const import (
+    DEVICE_CLASS_BATTERY,
+    DEVICE_CLASS_HUMIDITY,
+    DEVICE_CLASS_ILLUMINANCE,
+    DEVICE_CLASS_TEMPERATURE,
+    DEVICE_CLASS_FORMALDEHYDE,
+    DEVICE_CLASS_CONDUCTIVITY,
+    DATETIME_FORMAT,
     CONF_ROUNDING,
     CONF_DECIMALS,
     CONF_LOG_SPIKES,
@@ -93,6 +102,19 @@ T_STRUCT = struct.Struct("<h")
 CND_STRUCT = struct.Struct("<H")
 ILL_STRUCT = struct.Struct("<I")
 FMDH_STRUCT = struct.Struct("<H")
+
+
+# Initialize MQTT connection. Return MQTT client
+def init_mqtt_connection(settings):
+    mqtt_server=settings.mqtt_server
+    mqtt_user=settings.mqtt_user
+    mqtt_pass=settings.mqtt_pass
+    mqtt_port=settings.mqtt_port
+    mqtt_timeout=settings.mqtt_timeout
+    client = mqtt.Client()
+    client.username_pw_set(mqtt_user,mqtt_pass)
+    client.connect(mqtt_server, mqtt_port, mqtt_timeout)
+    return client
 
 
 class HCIdump(Thread):
@@ -456,6 +478,10 @@ class BLEScanner:
             for sensor in self.sensors_by_mac[key]:
                 print(sensor.device_state_attributes)
 
+    # Get current list of sensors
+    def get_sensors(self):
+        return self.sensors_by_mac
+
     def setup_platform(self, config, discovery_info=None):
         """Set up the sensor platform."""
         self.config = config
@@ -730,19 +756,6 @@ class BLEScanner:
             if mac in batt:
                 if self.config[CONF_BATT_ENTITIES]:
                     setattr(sensors[b_i], "_state", batt[mac])
-                    try:
-                        sensors[b_i].schedule_update_ha_state()
-                    except (AttributeError, AssertionError):
-                        _LOGGER.debug(
-                            "Sensor %s (%s, batt.) not yet ready for update",
-                            mac,
-                            sensortype,
-                        )
-                    except RuntimeError as err:
-                        _LOGGER.error(
-                            "Sensor %s (%s, batt.) update error:", mac, sensortype
-                        )
-                        _LOGGER.error(err)
             if mac in temp_m_data:
                 success, error = self.calc_update_state(
                     sensors[t_i], mac, temp_m_data[mac]
@@ -797,34 +810,8 @@ class BLEScanner:
                     _LOGGER.error(error)
             if mac in cons_m_data:
                 setattr(sensors[cn_i], "_state", cons_m_data[mac])
-                try:
-                    sensors[cn_i].schedule_update_ha_state()
-                except (AttributeError, AssertionError):
-                    _LOGGER.debug(
-                        "Sensor %s (%s, cons.) not yet ready for update",
-                        mac,
-                        sensortype,
-                    )
-                except RuntimeError as err:
-                    _LOGGER.error(
-                        "Sensor %s (%s, cons.) update error:", mac, sensortype
-                    )
-                    _LOGGER.error(err)
             if mac in switch_m_data:
                 setattr(sensors[sw_i], "_state", switch_m_data[mac])
-                try:
-                    sensors[sw_i].schedule_update_ha_state()
-                except (AttributeError, AssertionError):
-                    _LOGGER.debug(
-                        "Sensor %s (%s, switch) not yet ready for update",
-                        mac,
-                        sensortype,
-                    )
-                except RuntimeError as err:
-                    _LOGGER.error(
-                        "Sensor %s (%s, switch) update error:", mac, sensortype
-                    )
-                    _LOGGER.error(err)
         _LOGGER.debug(
             "Finished. Parsed: %i hci events, %i xiaomi devices.",
             len(hcidump_raw),
@@ -896,7 +883,7 @@ class TemperatureSensor(MeasuringSensor):
         self._name = "mi temperature {}".format(self._sensor_name)
         self._unique_id = "t_" + self._sensor_name
         self._unit_of_measurement = unit_of_measurement(config, mac)
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_TEMPERATURE
 
 
 class HumiditySensor(MeasuringSensor):
@@ -909,7 +896,7 @@ class HumiditySensor(MeasuringSensor):
         self._name = "mi humidity {}".format(self._sensor_name)
         self._unique_id = "h_" + self._sensor_name
         self._unit_of_measurement = PERCENTAGE
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_HUMIDITY
 
 
 class MoistureSensor(MeasuringSensor):
@@ -922,7 +909,7 @@ class MoistureSensor(MeasuringSensor):
         self._name = "mi moisture {}".format(self._sensor_name)
         self._unique_id = "m_" + self._sensor_name
         self._unit_of_measurement = PERCENTAGE
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_HUMIDITY
 
 
 class ConductivitySensor(MeasuringSensor):
@@ -935,7 +922,7 @@ class ConductivitySensor(MeasuringSensor):
         self._name = "mi conductivity {}".format(self._sensor_name)
         self._unique_id = "c_" + self._sensor_name
         self._unit_of_measurement = CONDUCTIVITY
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_CONDUCTIVITY
 
     @property
     def icon(self):
@@ -953,7 +940,7 @@ class IlluminanceSensor(MeasuringSensor):
         self._name = "mi llluminance {}".format(self._sensor_name)
         self._unique_id = "l_" + self._sensor_name
         self._unit_of_measurement = "lx"
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_ILLUMINANCE
 
 
 class FormaldehydeSensor(MeasuringSensor):
@@ -966,7 +953,7 @@ class FormaldehydeSensor(MeasuringSensor):
         self._name = "mi formaldehyde {}".format(self._sensor_name)
         self._unique_id = "f_" + self._sensor_name
         self._unit_of_measurement = "mg/m³"
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_FORMALDEHYDE
 
     @property
     def icon(self):
@@ -984,7 +971,7 @@ class BatterySensor(MeasuringSensor):
         self._name = "mi battery {}".format(self._sensor_name)
         self._unique_id = "batt__" + self._sensor_name
         self._unit_of_measurement = PERCENTAGE
-        self._device_class = None
+        self._device_class = DEVICE_CLASS_BATTERY
 
 
 class ConsumableSensor(MeasuringSensor):
@@ -1059,19 +1046,50 @@ class SwitchBinarySensor():
 
 
 def main():
-    scanner = BLEScanner()
     # Initialize scanner platform
+    scanner = BLEScanner()
     scanner.setup_platform(settings)
+
+    # Initialize MQTT client
+    mqtt_client = init_mqtt_connection(settings)
 
     sleep(10)
 
-    while (True):
-        scanner.update_ble(datetime.utcnow())
-        scanner.print_sensor_stats()
-        sleep(30)
+    #while (True):
+    #    scanner.update_ble(datetime.utcnow())
+    #    scanner.print_sensor_stats()
+    #    sleep(30)
 
-    # Setup MQTT connection
-    mqtt_client = init_mqtt_connection()
+    mqtt_topic_prefix = settings.mqtt_topic_prefix
+    # Continually loop through pollers and submit data every BLE_POLLING_INTERVAL seconds
+    while True:
+        scanner.update_ble(datetime.utcnow())
+        sensors_by_mac = scanner.get_sensors()
+        for mac in sensors_by_mac:
+            print(mac, '->', sensors_by_mac[mac])
+            for sensor in sensors_by_mac[mac]:
+                data=sensor.device_state_attributes
+                print(data)
+                if(sensor.device_class == DEVICE_CLASS_TEMPERATURE):
+                    print("Temp sensor:" + str(data['mean']))
+                    temp=data['mean']
+                elif (sensor.device_class == DEVICE_CLASS_HUMIDITY):
+                    print("Humidity sensor" + str(data['mean']))
+                    humidity=data['mean']
+                elif (sensor.device_class == DEVICE_CLASS_BATTERY):
+                    print("Battery sensor" + str(sensor.state))
+                    battery_level=sensor.state
+            timestamp = datetime.now().strftime(DATETIME_FORMAT)
+            topic = mqtt_topic_prefix + mac
+            payload = json.dumps({ 'Time': timestamp, 'Temp': temp, 'Humidity': humidity, 'Battery': battery_level})
+            print("Topic:" + topic + "-" + payload)
+            res=mqtt_client.publish(topic=topic, payload=payload)
+            print (str(res[0]) + "," + str(res[1]))
+        print("Sleep for:" + str(settings.UPDATE_INTERVAL))
+        sleep(settings.UPDATE_INTERVAL)
+
+
+    
     # Scan for Xiaomi temp devices
     # devices = scan()
 
