@@ -5,6 +5,7 @@ import logging
 import statistics as sts
 import struct
 from threading import Thread
+from collections import OrderedDict
 from time import sleep
 import re
 import sys
@@ -375,21 +376,19 @@ def parse_raw_message(data, aeskeyslist, whitelist, report_unknown=False):
     return result
 
 
-def sensor_name(config, mac, sensor_type):
+def pretty_name(config, mac, sensor_type):
     """Set sensor name."""
     fmac = ":".join(mac[i: i + 2] for i in range(0, len(mac), 2))
-    sensor_names_dict = []
     for sensors in config[CONF_SENSOR_NAMES]:
-        sensor_names_dict.append(sensors.name)
-    if fmac in sensor_names_dict:
-        custom_name = sensor_names_dict.get(fmac)
-        _LOGGER.debug(
-            "Name of %s sensor with mac adress %s is set to: %s",
-            sensor_type,
-            fmac,
-            custom_name,
-        )
-        return custom_name
+        if fmac == sensors.mac:
+            custom_name = sensors.name
+            _LOGGER.debug(
+                "Name of %s sensor with mac adress %s is set to: %s",
+                sensor_type,
+                fmac,
+                custom_name,
+            )
+            return custom_name
     return mac
 
 
@@ -826,6 +825,7 @@ class MeasuringSensor():
     def __init__(self, config, mac):
         """Initialize the sensor."""
         self._name = ""
+        self._pretty_name = ""
         self._state = None
         self._unit_of_measurement = ""
         self._device_class = None
@@ -836,6 +836,11 @@ class MeasuringSensor():
     def name(self):
         """Return the name of the sensor."""
         return self._name
+
+    @property
+    def pretty_name(self):
+        """Return the location of the sensor."""
+        return self._pretty_name
 
     @property
     def state(self):
@@ -879,9 +884,9 @@ class TemperatureSensor(MeasuringSensor):
     def __init__(self, config, mac):
         "Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "temperature")
-        self._name = "mi temperature {}".format(self._sensor_name)
-        self._unique_id = "t_" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "temperature")
+        self._name = "mi_temperature_{}".format(self._pretty_name.lower())
+        self._unique_id = "t_" + self._pretty_name
         self._unit_of_measurement = unit_of_measurement(config, mac)
         self._device_class = DEVICE_CLASS_TEMPERATURE
 
@@ -892,9 +897,9 @@ class HumiditySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "humidity")
-        self._name = "mi humidity {}".format(self._sensor_name)
-        self._unique_id = "h_" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "humidity")
+        self._name = "mi_humidity_{}".format(self._pretty_name.lower())
+        self._unique_id = "h_" + self._pretty_name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_HUMIDITY
 
@@ -905,9 +910,9 @@ class MoistureSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "moisture")
-        self._name = "mi moisture {}".format(self._sensor_name)
-        self._unique_id = "m_" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "moisture")
+        self._name = "mi_moisture_{}".format(self._pretty_name.lower())
+        self._unique_id = "m_" + self._pretty_name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_HUMIDITY
 
@@ -918,9 +923,9 @@ class ConductivitySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "conductivity")
-        self._name = "mi conductivity {}".format(self._sensor_name)
-        self._unique_id = "c_" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "conductivity")
+        self._name = "mi_conductivity_{}".format(self._pretty_name.lower())
+        self._unique_id = "c_" + self._pretty_name
         self._unit_of_measurement = CONDUCTIVITY
         self._device_class = DEVICE_CLASS_CONDUCTIVITY
 
@@ -936,9 +941,9 @@ class IlluminanceSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "illuminance")
-        self._name = "mi llluminance {}".format(self._sensor_name)
-        self._unique_id = "l_" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "illuminance")
+        self._name = "mi_illuminance_{}".format(self._pretty_name.lower())
+        self._unique_id = "l_" + self._pretty_name
         self._unit_of_measurement = "lx"
         self._device_class = DEVICE_CLASS_ILLUMINANCE
 
@@ -949,9 +954,9 @@ class FormaldehydeSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "formaldehyde")
-        self._name = "mi formaldehyde {}".format(self._sensor_name)
-        self._unique_id = "f_" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "formaldehyde")
+        self._name = "mi_formaldehyde_{}".format(self._pretty_name.lower())
+        self._unique_id = "f_" + self._pretty_name
         self._unit_of_measurement = "mg/m³"
         self._device_class = DEVICE_CLASS_FORMALDEHYDE
 
@@ -967,9 +972,9 @@ class BatterySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "battery")
-        self._name = "mi battery {}".format(self._sensor_name)
-        self._unique_id = "batt__" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "battery")
+        self._name = "mi_battery_{}".format(self._pretty_name.lower())
+        self._unique_id = "batt__" + self._pretty_name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_BATTERY
 
@@ -980,9 +985,9 @@ class ConsumableSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = sensor_name(config, mac, "consumbable")
-        self._name = "mi consumable {}".format(self._sensor_name)
-        self._unique_id = "cn__" + self._sensor_name
+        self._pretty_name = pretty_name(config, mac, "consumbable")
+        self._name = "mi_consumable_{}".format(self._pretty_name.lower())
+        self._unique_id = "cn__" + self._pretty_name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = None
 
@@ -997,10 +1002,10 @@ class SwitchBinarySensor():
 
     def __init__(self, config, mac):
         """Initialize the sensor."""
-        self._sensor_name = sensor_name(config, mac, "switch")
-        self._name = "mi switch {}".format(self._sensor_name)
+        self._pretty_name = pretty_name(config, mac, "switch")
+        self._name = "mi_switch_{}".format(self._pretty_name.lower())
         self._state = None
-        self._unique_id = "sw_" + self._sensor_name
+        self._unique_id = "sw_" + self._pretty_name
         self._device_state_attributes = {}
         self._device_class = None
 
@@ -1053,38 +1058,55 @@ def main():
     # Initialize MQTT client
     mqtt_client = init_mqtt_connection(settings)
 
-    sleep(10)
-
-    #while (True):
-    #    scanner.update_ble(datetime.utcnow())
-    #    scanner.print_sensor_stats()
-    #    sleep(30)
-
-    mqtt_topic_prefix = settings.mqtt_topic_prefix
+    base_state_topic = settings.mqtt_topic_prefix
     # Continually loop through pollers and submit data every BLE_POLLING_INTERVAL seconds
     while True:
         scanner.update_ble(datetime.utcnow())
         sensors_by_mac = scanner.get_sensors()
+
+        # Loop through sensors and send Discovery Announcement
         for mac in sensors_by_mac:
             print(mac, '->', sensors_by_mac[mac])
             for sensor in sensors_by_mac[mac]:
+                state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.pretty_name)
+                discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.pretty_name, sensor.device_class)
+                data=sensor.device_state_attributes
+                payload = OrderedDict()
+                payload['name'] = "{}".format(sensor.name)
+                payload['unique_id'] = "{}-{}".format(mac.lower().replace(":", ""), sensor.device_class)
+                payload['unit_of_measurement'] = sensor.unit_of_measurement
+                payload['device_class'] = sensor.device_class
+                payload['state_topic'] = state_topic
+                payload['value_template'] = "{{{{ value_json.{} }}}}".format(sensor.device_class)
+                payload['device'] = {
+                        'identifiers' : ["MiSensor{}".format(mac.lower().replace(":", ""))],
+                        'connections' : [["mac", mac.lower()]],
+                        'manufacturer' : 'Xiaomi',
+                        'name' : sensor.pretty_name,
+                        'model' : "Xioami MI sensor {}".format(data['sensor type']),
+                }
+                mqtt_client.publish(discovery_topic, json.dumps(payload), 1, False)
+
+        for mac in sensors_by_mac:
+            print(mac, '->', sensors_by_mac[mac])
+            for sensor in sensors_by_mac[mac]:
+                state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
                 data=sensor.device_state_attributes
                 print(data)
                 if(sensor.device_class == DEVICE_CLASS_TEMPERATURE):
                     print("Temp sensor:" + str(data['mean']))
                     temp=data['mean']
+                    payload = json.dumps({ 'temperature': temp})
                 elif (sensor.device_class == DEVICE_CLASS_HUMIDITY):
                     print("Humidity sensor" + str(data['mean']))
                     humidity=data['mean']
+                    payload = json.dumps({ 'humidity': humidity })
                 elif (sensor.device_class == DEVICE_CLASS_BATTERY):
                     print("Battery sensor" + str(sensor.state))
                     battery_level=sensor.state
-            timestamp = datetime.now().strftime(DATETIME_FORMAT)
-            topic = mqtt_topic_prefix + mac
-            payload = json.dumps({ 'Time': timestamp, 'Temp': temp, 'Humidity': humidity, 'Battery': battery_level})
-            print("Topic:" + topic + "-" + payload)
-            res=mqtt_client.publish(topic=topic, payload=payload)
-            print (str(res[0]) + "," + str(res[1]))
+                    payload = json.dumps({ 'battery': battery_level})
+                res=mqtt_client.publish(topic=state_topic, payload=payload)
+                print (str(res[0]) + "," + str(res[1]))
         print("Sleep for:" + str(settings.UPDATE_INTERVAL))
         sleep(settings.UPDATE_INTERVAL)
 
