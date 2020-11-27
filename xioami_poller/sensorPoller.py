@@ -29,7 +29,6 @@ from const import (
     DEVICE_CLASS_TEMPERATURE,
     DEVICE_CLASS_FORMALDEHYDE,
     DEVICE_CLASS_CONDUCTIVITY,
-    DATETIME_FORMAT,
     CONF_ROUNDING,
     CONF_DECIMALS,
     CONF_LOG_SPIKES,
@@ -1053,6 +1052,8 @@ class SwitchBinarySensor():
 def main():
     # Initialize scanner platform
     scanner = BLEScanner()
+
+    # Setup passive scanner platform
     scanner.setup_platform(settings)
 
     # Initialize MQTT client
@@ -1109,21 +1110,6 @@ def main():
                 print (str(res[0]) + "," + str(res[1]))
         print("Sleep for:" + str(settings.UPDATE_INTERVAL))
         sleep(settings.UPDATE_INTERVAL)
-
-
-    
-    # Scan for Xiaomi temp devices
-    # devices = scan()
-
-    # Tuple consisting of (device_mac, poller)
-    # pollers = []
-    # Create poller for each device
-    # for device in devices:
-    #    poller = MiTempBtPoller(device[0], BluepyBackend, 20.0)
-    #    pollers.append((device[0],poller))
-
-    # Continually loop through pollers and submit data every BLE_POLLING_INTERVAL seconds
-    # fetch_sensor_data_loop(pollers, mqtt_client)
 
 
 if __name__ == "__main__":
