@@ -1,5 +1,0 @@
-{
-  "name": "Xiaomi passive BLE monitor sensor platform",
-  "domains": "sensor",
-  "iot_class": "local push"
-}

@@ -1068,8 +1068,8 @@ def main():
         for mac in sensors_by_mac:
             print(mac, '->', sensors_by_mac[mac])
             for sensor in sensors_by_mac[mac]:
-                state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.pretty_name)
-                discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.pretty_name, sensor.device_class)
+                state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
+                discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.name.lower(), sensor.device_class)
                 data=sensor.device_state_attributes
                 payload = OrderedDict()
                 payload['name'] = "{}".format(sensor.name)
