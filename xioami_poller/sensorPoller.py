@@ -1,26 +1,29 @@
 """Xiaomi passive BLE monitor integration."""
+# Standard library imports
 import asyncio
-from datetime import datetime
+import json
 import logging
+import re
 import statistics as sts
 import struct
-from threading import Thread
-from collections import OrderedDict
-from time import sleep
-import re
 import sys
-import paho.mqtt.client as mqtt
-import json
-
-import aioblescan as aiobs
-from Cryptodome.Cipher import AES
-import voluptuous as vol
-from config import settings
-
 from typing import (
     Any,
     Callable
 )
+
+# Third party imports
+from Cryptodome.Cipher import AES
+from datetime import datetime
+from threading import Thread
+from collections import OrderedDict
+from time import sleep
+import paho.mqtt.client as mqtt
+import aioblescan as aiobs
+import voluptuous as vol
+
+# Local application imports
+from config import settings
 
 from const import (
     DEVICE_CLASS_BATTERY,
@@ -58,11 +61,11 @@ from const import (
     STATE_OFF
 )
 
+# Logging configuration
 _LOGGER = logging.getLogger()
 _LOGGER.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
-
 _LOGGER.addHandler(handler)
 
 # regex constants for configuration schema
@@ -106,13 +109,13 @@ FMDH_STRUCT = struct.Struct("<H")
 
 # Initialize MQTT connection. Return MQTT client
 def init_mqtt_connection(settings):
-    mqtt_server=settings.mqtt_server
-    mqtt_user=settings.mqtt_user
-    mqtt_pass=settings.mqtt_pass
-    mqtt_port=settings.mqtt_port
-    mqtt_timeout=settings.mqtt_timeout
+    mqtt_server = settings.mqtt_server
+    mqtt_user = settings.mqtt_user
+    mqtt_pass = settings.mqtt_pass
+    mqtt_port = settings.mqtt_port
+    mqtt_timeout = settings.mqtt_timeout
     client = mqtt.Client()
-    client.username_pw_set(mqtt_user,mqtt_pass)
+    client.username_pw_set(mqtt_user, mqtt_pass)
     client.connect(mqtt_server, mqtt_port, mqtt_timeout)
     return client
 
@@ -1049,6 +1052,69 @@ class SwitchBinarySensor():
         return True
 
 
+def process_data(scanner, mqtt_client):
+    _LOGGER.debug("Started processing data at %s", datetime.utcnow())
+
+    # Trigger update of sensors
+    scanner.update_ble(datetime.utcnow())
+
+    # Get current list of sensors
+    sensors_by_mac = scanner.get_sensors()
+
+    base_state_topic = settings.mqtt_topic_prefix
+
+    # Loop through sensors and send Discovery Announcement
+    for mac in sensors_by_mac:
+        _LOGGER.debug("Discovery update - Processing for MAC %s ", mac)
+        for sensor in sensors_by_mac[mac]:
+            _LOGGER.debug("Discovery update - Processing sensor %s: ", sensor.name)
+            state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
+            discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.name.lower(), sensor.device_class)
+            data = sensor.device_state_attributes
+            payload = OrderedDict()
+            payload['name'] = "{}".format(sensor.name)
+            payload['unique_id'] = "{}-{}".format(mac.lower().replace(":", ""), sensor.device_class)
+            payload['unit_of_measurement'] = sensor.unit_of_measurement
+            payload['device_class'] = sensor.device_class
+            payload['state_topic'] = state_topic
+            payload['value_template'] = "{{{{ value_json.{} }}}}".format(sensor.device_class)
+            payload['device'] = {
+                    'identifiers': ["MiSensor{}".format(mac.lower().replace(":", ""))],
+                    'connections': [["mac", mac.lower()]],
+                    'manufacturer': 'Xiaomi',
+                    'name': sensor.pretty_name,
+                    'model': "Xioami MI sensor {}".format(data['sensor type']),
+            }
+            _LOGGER.debug(
+                "Discovery update - MQTT sending to topic: %s Payload: %s ",
+                discovery_topic,
+                payload,
+            )
+            mqtt_client.publish(discovery_topic, json.dumps(payload), 1, False)
+
+    # Loop through sensors and send State Update
+    for mac in sensors_by_mac:
+        _LOGGER.debug("State update - Processing for MAC %s ", mac)
+        for sensor in sensors_by_mac[mac]:
+            _LOGGER.debug("State update - Processing sensor %s: ", sensor.name)
+            state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
+            data = sensor.device_state_attributes
+            _LOGGER.debug("Date received from BLE - %s: ", data)
+            if(sensor.device_class == DEVICE_CLASS_TEMPERATURE):
+                payload = json.dumps({'temperature': data['mean']})
+            elif (sensor.device_class == DEVICE_CLASS_HUMIDITY):
+                payload = json.dumps({'humidity': data['mean']})
+            elif (sensor.device_class == DEVICE_CLASS_BATTERY):
+                # Battery level is kept in state
+                payload = json.dumps({'battery': sensor.state})
+            _LOGGER.debug(
+                "MQTT state sending to topic: %s Payload: %s ",
+                discovery_topic,
+                payload,
+            )
+            mqtt_client.publish(topic=state_topic, payload=payload)
+
+
 def main():
     # Initialize scanner platform
     scanner = BLEScanner()
@@ -1059,56 +1125,9 @@ def main():
     # Initialize MQTT client
     mqtt_client = init_mqtt_connection(settings)
 
-    base_state_topic = settings.mqtt_topic_prefix
-    # Continually loop through pollers and submit data every BLE_POLLING_INTERVAL seconds
+    # Continually process BLE data
     while True:
-        scanner.update_ble(datetime.utcnow())
-        sensors_by_mac = scanner.get_sensors()
-
-        # Loop through sensors and send Discovery Announcement
-        for mac in sensors_by_mac:
-            print(mac, '->', sensors_by_mac[mac])
-            for sensor in sensors_by_mac[mac]:
-                state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
-                discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.name.lower(), sensor.device_class)
-                data=sensor.device_state_attributes
-                payload = OrderedDict()
-                payload['name'] = "{}".format(sensor.name)
-                payload['unique_id'] = "{}-{}".format(mac.lower().replace(":", ""), sensor.device_class)
-                payload['unit_of_measurement'] = sensor.unit_of_measurement
-                payload['device_class'] = sensor.device_class
-                payload['state_topic'] = state_topic
-                payload['value_template'] = "{{{{ value_json.{} }}}}".format(sensor.device_class)
-                payload['device'] = {
-                        'identifiers' : ["MiSensor{}".format(mac.lower().replace(":", ""))],
-                        'connections' : [["mac", mac.lower()]],
-                        'manufacturer' : 'Xiaomi',
-                        'name' : sensor.pretty_name,
-                        'model' : "Xioami MI sensor {}".format(data['sensor type']),
-                }
-                mqtt_client.publish(discovery_topic, json.dumps(payload), 1, False)
-
-        for mac in sensors_by_mac:
-            print(mac, '->', sensors_by_mac[mac])
-            for sensor in sensors_by_mac[mac]:
-                state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
-                data=sensor.device_state_attributes
-                print(data)
-                if(sensor.device_class == DEVICE_CLASS_TEMPERATURE):
-                    print("Temp sensor:" + str(data['mean']))
-                    temp=data['mean']
-                    payload = json.dumps({ 'temperature': temp})
-                elif (sensor.device_class == DEVICE_CLASS_HUMIDITY):
-                    print("Humidity sensor" + str(data['mean']))
-                    humidity=data['mean']
-                    payload = json.dumps({ 'humidity': humidity })
-                elif (sensor.device_class == DEVICE_CLASS_BATTERY):
-                    print("Battery sensor" + str(sensor.state))
-                    battery_level=sensor.state
-                    payload = json.dumps({ 'battery': battery_level})
-                res=mqtt_client.publish(topic=state_topic, payload=payload)
-                print (str(res[0]) + "," + str(res[1]))
-        print("Sleep for:" + str(settings.UPDATE_INTERVAL))
+        process_data(scanner, mqtt_client)
         sleep(settings.UPDATE_INTERVAL)
 
 
