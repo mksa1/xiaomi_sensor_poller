@@ -1100,9 +1100,10 @@ def process_data(scanner, mqtt_client):
             state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
             data = sensor.device_state_attributes
             _LOGGER.debug("Date received from BLE - %s: ", data)
-            if(sensor.device_class == DEVICE_CLASS_TEMPERATURE):
+            payload = ""
+            if(sensor.device_class == DEVICE_CLASS_TEMPERATURE and 'mean' in data):
                 payload = json.dumps({'temperature': data['mean']})
-            elif (sensor.device_class == DEVICE_CLASS_HUMIDITY):
+            elif (sensor.device_class == DEVICE_CLASS_HUMIDITY and 'mean' in data):
                 payload = json.dumps({'humidity': data['mean']})
             elif (sensor.device_class == DEVICE_CLASS_BATTERY):
                 # Battery level is kept in state
@@ -1112,7 +1113,8 @@ def process_data(scanner, mqtt_client):
                 discovery_topic,
                 payload,
             )
-            mqtt_client.publish(topic=state_topic, payload=payload)
+            if (payload != ""):
+                mqtt_client.publish(topic=state_topic, payload=payload)
 
 
 def main():
