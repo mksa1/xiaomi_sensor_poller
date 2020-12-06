@@ -378,22 +378,6 @@ def parse_raw_message(data, aeskeyslist, whitelist, report_unknown=False):
     return result
 
 
-def pretty_name(config, mac, sensor_type):
-    """Set sensor name."""
-    fmac = ":".join(mac[i: i + 2] for i in range(0, len(mac), 2))
-    for sensors in config[CONF_SENSOR_NAMES]:
-        if fmac == sensors.mac:
-            custom_name = sensors.name
-            _LOGGER.debug(
-                "Name of %s sensor with mac adress %s is set to: %s",
-                sensor_type,
-                fmac,
-                custom_name,
-            )
-            return custom_name
-    return mac
-
-
 def unit_of_measurement(config, mac):
     """Set unit of measurement to °C or °F."""
     fmac = ':'.join(mac[i:i + 2] for i in range(0, len(mac), 2))
@@ -827,12 +811,14 @@ class MeasuringSensor():
     def __init__(self, config, mac):
         """Initialize the sensor."""
         self._name = ""
-        self._pretty_name = ""
+        self._sensor_name = ""
+        self._config = config
         self._state = None
         self._unit_of_measurement = ""
         self._device_class = None
         self._device_state_attributes = {}
         self._unique_id = ""
+        self._mac = mac
 
     @property
     def name(self):
@@ -840,9 +826,19 @@ class MeasuringSensor():
         return self._name
 
     @property
-    def pretty_name(self):
+    def sensor_name(self):
         """Return the location of the sensor."""
-        return self._pretty_name
+        return self._sensor_name
+
+    @property
+    def config(self):
+        """Return the location of the sensor."""
+        return self._config
+
+    @property
+    def mac(self):
+        """Return the location of the sensor."""
+        return self._mac
 
     @property
     def state(self):
@@ -865,19 +861,24 @@ class MeasuringSensor():
         return self._device_state_attributes
 
     @property
-    def should_poll(self):
-        """No polling needed."""
-        return False
-
-    @property
     def unique_id(self) -> str:
         """Return a unique ID."""
         return self._unique_id
 
-    @property
-    def force_update(self):
-        """Force update."""
-        return True
+    def get_sensorname(self):
+        """Set sensor name."""
+        fmac = ":".join(self.mac[i: i + 2] for i in range(0, len(self.mac), 2))
+        for sensors in self.config[CONF_SENSOR_NAMES]:
+            if fmac == sensors.mac:
+                custom_name = sensors.name
+                _LOGGER.debug(
+                    "Name of %s sensor with mac adress %s is set to: %s",
+                    self.device_class,
+                    fmac,
+                    custom_name,
+                )
+                return custom_name
+        return self.mac
 
 
 class TemperatureSensor(MeasuringSensor):
@@ -886,9 +887,9 @@ class TemperatureSensor(MeasuringSensor):
     def __init__(self, config, mac):
         "Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "temperature")
-        self._name = "mi_temperature_{}".format(self._pretty_name.lower())
-        self._unique_id = "t_" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_temperature_{}".format(self._sensor_name.lower())
+        self._unique_id = "t_" + self._name
         self._unit_of_measurement = unit_of_measurement(config, mac)
         self._device_class = DEVICE_CLASS_TEMPERATURE
 
@@ -899,9 +900,9 @@ class HumiditySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "humidity")
-        self._name = "mi_humidity_{}".format(self._pretty_name.lower())
-        self._unique_id = "h_" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_humidity_{}".format(self._sensor_name.lower())
+        self._unique_id = "h_" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_HUMIDITY
 
@@ -912,9 +913,9 @@ class MoistureSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "moisture")
-        self._name = "mi_moisture_{}".format(self._pretty_name.lower())
-        self._unique_id = "m_" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_moisture_{}".format(self._sensor_name.lower())
+        self._unique_id = "m_" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_HUMIDITY
 
@@ -925,9 +926,9 @@ class ConductivitySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "conductivity")
-        self._name = "mi_conductivity_{}".format(self._pretty_name.lower())
-        self._unique_id = "c_" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_conductivity_{}".format(self._sensor_name.lower())
+        self._unique_id = "c_" + self._name
         self._unit_of_measurement = CONDUCTIVITY
         self._device_class = DEVICE_CLASS_CONDUCTIVITY
 
@@ -943,9 +944,9 @@ class IlluminanceSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "illuminance")
-        self._name = "mi_illuminance_{}".format(self._pretty_name.lower())
-        self._unique_id = "l_" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_illuminance_{}".format(self._sensor_name.lower())
+        self._unique_id = "l_" + self._name
         self._unit_of_measurement = "lx"
         self._device_class = DEVICE_CLASS_ILLUMINANCE
 
@@ -956,9 +957,9 @@ class FormaldehydeSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "formaldehyde")
-        self._name = "mi_formaldehyde_{}".format(self._pretty_name.lower())
-        self._unique_id = "f_" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_formaldehyde_{}".format(self._sensor_name.lower())
+        self._unique_id = "f_" + self._name
         self._unit_of_measurement = "mg/m³"
         self._device_class = DEVICE_CLASS_FORMALDEHYDE
 
@@ -974,9 +975,9 @@ class BatterySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "battery")
-        self._name = "mi_battery_{}".format(self._pretty_name.lower())
-        self._unique_id = "batt__" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_battery_{}".format(self._sensor_name.lower())
+        self._unique_id = "batt__" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_BATTERY
 
@@ -987,9 +988,9 @@ class ConsumableSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._pretty_name = pretty_name(config, mac, "consumbable")
-        self._name = "mi_consumable_{}".format(self._pretty_name.lower())
-        self._unique_id = "cn__" + self._pretty_name
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_consumable_{}".format(self._sensor_name.lower())
+        self._unique_id = "cn__" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = None
 
@@ -1004,10 +1005,10 @@ class SwitchBinarySensor():
 
     def __init__(self, config, mac):
         """Initialize the sensor."""
-        self._pretty_name = pretty_name(config, mac, "switch")
-        self._name = "mi_switch_{}".format(self._pretty_name.lower())
+        self._sensor_name = super().get_sensorname()
+        self._name = "mi_switch_{}".format(self._sensor_name.lower())
         self._state = None
-        self._unique_id = "sw_" + self._pretty_name
+        self._unique_id = "sw_" + self._name
         self._device_state_attributes = {}
         self._device_class = None
 
@@ -1082,7 +1083,7 @@ def process_data(scanner, mqtt_client):
                     'identifiers': ["MiSensor{}".format(mac.lower().replace(":", ""))],
                     'connections': [["mac", mac.lower()]],
                     'manufacturer': 'Xiaomi',
-                    'name': sensor.pretty_name,
+                    'name': sensor.sensor_name,
                     'model': "Xioami MI sensor {}".format(data['sensor type']),
             }
             _LOGGER.debug(
