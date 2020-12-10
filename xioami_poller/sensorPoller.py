@@ -23,7 +23,7 @@ import aioblescan as aiobs
 import voluptuous as vol
 
 # Local application imports
-from config import settings
+from sensor_config import settings
 
 from const import (
     DEVICE_CLASS_BATTERY,
@@ -1091,7 +1091,7 @@ def process_data(scanner, mqtt_client):
                 discovery_topic,
                 payload,
             )
-            mqtt_client.publish(discovery_topic, json.dumps(payload), 1, False)
+            mqtt_client.publish(discovery_topic, json.dumps(payload), 1, True)
 
     # Loop through sensors and send State Update
     for mac in sensors_by_mac:

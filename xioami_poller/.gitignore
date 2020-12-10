@@ -2,8 +2,5 @@
 __pycache__/
 *.py[cod]
 
-# Ignore dynaconf secret files
-.secrets.*
-
 # Visual Code files
 **/.vscode/
