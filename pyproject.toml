@@ -13,7 +13,6 @@ pycryptodomex = "3.9.9"
 voluptuous = "0.12.0"
 dt-utils="0.0.3"
 numpy="1.18.1"
-#xioami_poller = { path = "xioami_poller" }
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"
