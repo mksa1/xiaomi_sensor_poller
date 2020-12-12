@@ -1059,7 +1059,7 @@ def process_data(scanner, mqtt_client):
     # Get current list of sensors
     sensors_by_mac = scanner.get_sensors()
 
-    base_state_topic = settings.mqtt_topic_prefix
+    base_state_topic = settings.mqtt_base_topic
 
     # Loop through sensors and send Discovery Announcement
     for mac in sensors_by_mac:
