@@ -5,6 +5,7 @@ mqtt_timeout=60
 mqtt_discovery_prefix="homeassistant"
 mqtt_topic_prefix="homeassistant"
 update_interval=30
+logging_conf="logging.conf"
 
 rounding=true
 decimals=1
