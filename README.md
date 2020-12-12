@@ -132,13 +132,9 @@ Logging is configured in logging.conf
   
   (positive integer))(required) MQTT timeout
 
-#### mqtt_discovery_prefix
+#### mqtt_base_topic
   
   (string)(required) This is used to specifuc the prefix of the MQTT topic for Home Assistant discovery messages.
-
-#### mqtt_state_prefix
-  
-  (string)(required) This is used to specifuc the prefix of the MQTT topic for Home Assistant state update messages.
 
 #### update_interval
   
