@@ -7,6 +7,7 @@ import logging.config
 import re
 import statistics as sts
 import struct
+import time
 from typing import (
     Any,
     Callable
@@ -1128,7 +1129,7 @@ def main():
     # Continually process BLE data
     while True:
         process_data(scanner, mqtt_client)
-        sleep(settings.UPDATE_INTERVAL)
+        sleep(settings.UPDATE_INTERVAL - time.time() % settings.update_interval)
 
 
 if __name__ == "__main__":
