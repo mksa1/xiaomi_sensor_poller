@@ -3,10 +3,10 @@
 import asyncio
 import json
 import logging
+import logging.config
 import re
 import statistics as sts
 import struct
-import sys
 from typing import (
     Any,
     Callable
@@ -23,9 +23,9 @@ import aioblescan as aiobs
 import voluptuous as vol
 
 # Local application imports
-from sensor_config import settings
+from xioami_poller.sensor_config import settings
 
-from const import (
+from xioami_poller.const import (
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_HUMIDITY,
     DEVICE_CLASS_ILLUMINANCE,
@@ -62,11 +62,8 @@ from const import (
 )
 
 # Logging configuration
+logging.config.fileConfig(fname=settings.logging_conf, disable_existing_loggers=False)
 _LOGGER = logging.getLogger()
-_LOGGER.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-_LOGGER.addHandler(handler)
 
 # regex constants for configuration schema
 MAC_REGEX = "(?i)^(?:[0-9A-F]{2}[:]){5}(?:[0-9A-F]{2})$"
