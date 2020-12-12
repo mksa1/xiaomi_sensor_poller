@@ -3,7 +3,7 @@ mqtt_user="mqtt_pi"
 mqtt_port=1883
 mqtt_timeout=60
 mqtt_discovery_prefix="homeassistant"
-mqtt_topic_prefix="homeassistant"
+mqtt_state_prefix="homeassistant"
 update_interval=30
 logging_conf="logging.conf"
 

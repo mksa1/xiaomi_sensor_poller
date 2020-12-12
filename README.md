@@ -81,17 +81,7 @@ Overview
 
   ![WX08ZM](pictures/WX08ZM.jpg)
 
-- MCCGQ02HL
 
-  (Xiaomi Mijia Window Door Sensor 2, broadcasts opening state, light state and battery level. Advertisements are encrypted, therefore you need to set an encryption key in your configuration, see for instructions the [encryption_key](#encryption_key) option. Battery level is only send once in approximately 24 hours.)
-
-  ![MCCGQ02HL](pictures/MCCGQ02HL.png)
-
-- YM-K1501
-
-  (Xiaomi Mijia Smart kettle, experimental support, collecting data)
-
-  ![YM-K1501](pictures/YM-K1501.png)
 
 
 # Setup instructions
@@ -128,7 +118,6 @@ Logging is configured in logging.conf
 ### Generic configuration
 
 #### mqtt_server
-  
   (string)(required) Point to your MQTT broker
 
 #### mqtt_user
@@ -227,12 +216,14 @@ Data from sensors with other addresses will be ignored. Default value: True
 
    (boolean)(Optional) This option is needed primarily for those who want to request an implementation of device support that is not in the list of [supported sensors](#supported-sensors). If you set this parameter to `True`, then the component will log all messages from unknown Xiaomi ecosystem devices to the Home Assitant log (`logger` component must be enabled). **Attention!** Enabling this option can lead to huge output to the Home Assistant log, do not enable it if you do not need it! Details in the [FAQ](https://github.com/custom-components/ble_monitor/blob/master/faq.md#my-sensor-from-the-xiaomi-ecosystem-is-not-in-the-list-of-supported-ones-how-to-request-implementation). Default value: False
 
+### Sensor configuration
 #### sensor_names
-    (array of tables)(optional) This option serves as a map from sensor mac to a frindly name but aslo serves as a list of whitelisted sensors. See option `whitelist`. Note that the format is a list of tables entries
+    (array of tables)(optional) This option serves as a map from sensor mac to a frindly name but aslo serves as a list of whitelisted sensors. Encryption key is only needed for devices where encryption is used. See option `whitelist`. Note that the format is a list of tables entries
 ```
 [[sensor_names]]
 name='kitchen'
 mac='4C:65:A8:DB:A8:74'
+encryption_key='217C568CF5D22808DA20181502D84C1B'
 
 [[sensor_names]]
 name='hall'
