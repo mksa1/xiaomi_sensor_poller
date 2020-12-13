@@ -24,9 +24,9 @@ import aioblescan as aiobs
 import voluptuous as vol
 
 # Local application imports
-from xioami_poller.sensor_config import settings
+from xiaomi_poller.sensor_config import settings
 
-from xioami_poller.const import (
+from xiaomi_poller.const import (
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_HUMIDITY,
     DEVICE_CLASS_ILLUMINANCE,

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "xioami_poller"
+name = "xiaomi_poller"
 version = "0.1.0"
 description = "Xiaomi Sensor poller to MQTT. Home Assistant support"
 authors = ["Mikael Andersen <andersen.mikael@gmail.com>"]
@@ -25,4 +25,4 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-sensorPoller = "xioami_poller.sensorPoller:main"
+sensorPoller = "xiaomi_poller.sensorPoller:main"
