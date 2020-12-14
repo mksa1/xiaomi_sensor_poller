@@ -1,0 +1,13 @@
+[Unit]
+Description=Xiaomi Sensor Poller
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory={{ venv_home }}
+ExecStart={{ venv_home }}/bin/python {{ sensor_poller_home }}/xiaomi_poller/sensorPoller.py --serve-in-foreground
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
