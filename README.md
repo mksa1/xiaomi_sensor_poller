@@ -233,4 +233,27 @@ Running the poller:
 poetry run sensorPoller
 ```
 
+A sample systemd file has also been included 
+
+``` systemd
+[Unit]
+Description=Xiaomi Sensor Poller
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory={{ sensor_poller_home }}
+ExecStart={{ venv_home }}/bin/python {{ sensor_poller_home }}/xiaomi_poller/sensorPoller.py --serve-in-foreground
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Replace {{ sensor_poller home }} and {{ venv_home }} accordingly. 
+To get the venv_home use the following command
+``` shell
+poetry env list --full-path
+```
 
