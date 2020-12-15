@@ -1050,7 +1050,6 @@ class SwitchBinarySensor():
         """Force update."""
         return True
 
-
 def process_data(scanner, mqtt_client):
     _LOGGER.debug("Started processing data at %s", datetime.utcnow())
 
@@ -1089,7 +1088,15 @@ def process_data(scanner, mqtt_client):
                 discovery_topic,
                 payload,
             )
-            mqtt_client.publish(discovery_topic, json.dumps(payload), 1, True)
+            (return_code, client_id) = mqtt_client.publish(discovery_topic, json.dumps(payload), 1, True)
+            if (return_code > 0):
+                _LOGGER.debug(
+                        "MQTT send failed topic: %s Payload: %s Return code %s ClientID %2",
+                        discovery_topic,
+                        payload,
+                        return_code,
+                        client_id
+                )
 
     # Loop through sensors and send State Update
     for mac in sensors_by_mac:
@@ -1109,11 +1116,19 @@ def process_data(scanner, mqtt_client):
                 payload = json.dumps({'battery': sensor.state})
             _LOGGER.debug(
                 "MQTT state sending to topic: %s Payload: %s ",
-                discovery_topic,
+                state_topic,
                 payload,
             )
             if (payload != ""):
-                mqtt_client.publish(topic=state_topic, payload=payload)
+                (return_code, client_id) = mqtt_client.publish(topic=state_topic, payload=payload)
+                if (return_code > 0):
+                    _LOGGER.debug(
+                        "MQTT send failed topic: %s Payload: %s Return code %s ClientID %2",
+                        state_topic,
+                        payload,
+                        return_code,
+                        client_id
+                    )
 
 
 def main():
@@ -1125,7 +1140,7 @@ def main():
 
     # Initialize MQTT client
     mqtt_client = init_mqtt_connection(settings)
-
+  
     # Continually process BLE data
     while True:
         process_data(scanner, mqtt_client)
