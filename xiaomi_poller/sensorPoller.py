@@ -886,7 +886,7 @@ class TemperatureSensor(MeasuringSensor):
         "Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_temperature_{}".format(self._sensor_name.lower())
+        self._name = "mi_temperature_{}".format(mac.lower())
         self._unique_id = "t_" + self._name
         self._unit_of_measurement = unit_of_measurement(config, mac)
         self._device_class = DEVICE_CLASS_TEMPERATURE
@@ -899,7 +899,7 @@ class HumiditySensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_humidity_{}".format(self._sensor_name.lower())
+        self._name = "mi_humidity_{}".format(mac.lower())
         self._unique_id = "h_" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_HUMIDITY
@@ -912,7 +912,7 @@ class MoistureSensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_moisture_{}".format(self._sensor_name.lower())
+        self._name = "mi_moisture_{}".format(mac.lower())
         self._unique_id = "m_" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_HUMIDITY
@@ -925,7 +925,7 @@ class ConductivitySensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_conductivity_{}".format(self._sensor_name.lower())
+        self._name = "mi_conductivity_{}".format(mac.lower())
         self._unique_id = "c_" + self._name
         self._unit_of_measurement = CONDUCTIVITY
         self._device_class = DEVICE_CLASS_CONDUCTIVITY
@@ -943,7 +943,7 @@ class IlluminanceSensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_illuminance_{}".format(self._sensor_name.lower())
+        self._name = "mi_illuminance_{}".format(mac.lower())
         self._unique_id = "l_" + self._name
         self._unit_of_measurement = "lx"
         self._device_class = DEVICE_CLASS_ILLUMINANCE
@@ -956,7 +956,7 @@ class FormaldehydeSensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_formaldehyde_{}".format(self._sensor_name.lower())
+        self._name = "mi_formaldehyde_{}".format(mac.lower())
         self._unique_id = "f_" + self._name
         self._unit_of_measurement = "mg/m³"
         self._device_class = DEVICE_CLASS_FORMALDEHYDE
@@ -974,7 +974,7 @@ class BatterySensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_battery_{}".format(self._sensor_name.lower())
+        self._name = "mi_battery_{}".format(mac.lower())
         self._unique_id = "batt__" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = DEVICE_CLASS_BATTERY
@@ -987,7 +987,7 @@ class ConsumableSensor(MeasuringSensor):
         """Initialize the sensor."""
         super().__init__(config, mac)
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_consumable_{}".format(self._sensor_name.lower())
+        self._name = "mi_consumable_{}".format(mac.lower())
         self._unique_id = "cn__" + self._name
         self._unit_of_measurement = PERCENTAGE
         self._device_class = None
@@ -1004,7 +1004,7 @@ class SwitchBinarySensor():
     def __init__(self, config, mac):
         """Initialize the sensor."""
         self._sensor_name = super().get_sensorname()
-        self._name = "mi_switch_{}".format(self._sensor_name.lower())
+        self._name = "mi_switch_{}".format(mac.lower())
         self._state = None
         self._unique_id = "sw_" + self._name
         self._device_state_attributes = {}
@@ -1050,6 +1050,7 @@ class SwitchBinarySensor():
         """Force update."""
         return True
 
+
 def process_data(scanner, mqtt_client):
     _LOGGER.debug("Started processing data at %s", datetime.utcnow())
 
@@ -1066,11 +1067,11 @@ def process_data(scanner, mqtt_client):
         _LOGGER.debug("Discovery update - Processing for MAC %s ", mac)
         for sensor in sensors_by_mac[mac]:
             _LOGGER.debug("Discovery update - Processing sensor %s: ", sensor.name)
-            state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
-            discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.name.lower(), sensor.device_class)
+            state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name)
+            discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.name, sensor.device_class)
             data = sensor.device_state_attributes
             payload = OrderedDict()
-            payload['name'] = "{}".format(sensor.name)
+            payload['name'] = "{} {}".format(sensor.sensor_name, sensor.device_class)
             payload['unique_id'] = "{}-{}".format(mac.lower().replace(":", ""), sensor.device_class)
             payload['unit_of_measurement'] = sensor.unit_of_measurement
             payload['device_class'] = sensor.device_class
@@ -1103,7 +1104,7 @@ def process_data(scanner, mqtt_client):
         _LOGGER.debug("State update - Processing for MAC %s ", mac)
         for sensor in sensors_by_mac[mac]:
             _LOGGER.debug("State update - Processing sensor %s: ", sensor.name)
-            state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name.lower())
+            state_topic = '{}/sensor/{}/state'.format(base_state_topic, sensor.name)
             data = sensor.device_state_attributes
             _LOGGER.debug("Date received from BLE - %s: ", data)
             payload = ""
