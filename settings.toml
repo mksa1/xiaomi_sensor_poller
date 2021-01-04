@@ -16,41 +16,32 @@ hci_interface=[ 0 ]
 batt_entities=true
 encryptors= {}
 report_unknown=false
-whitelist=true
+whitelist=false
 sensor_fahrenheit= {}
 [[sensor_names]]
-name='Koekken_kontor'
+name='Xiaomi Køkken/kontor'
 mac='4C:65:A8:DB:A8:74'
 
-#[[sensor_names]]
-#name='Unknown1'
-#mac='4C:65:A8:DB:A8:07'
-
-#[[sensor_names]]
-#name='Unknown2'
-#mac='4C:65:A8:DB:A6:85'
-
-#[[sensor_names]]
-#name='Unknown4'
-#mac='4C:65:A8:DB:A8:07'
-
-#[[sensor_names]]
-#name='Unknown5'
-#mac='4C:65:A8:DB:A7:94'
-
-#[[sensor_names]]
-#name='Unknown6'
-#mac='4C:65:A8:DB:91:EC'
-
 [[sensor_names]]
-name='Gang_stue'
+name='Xiaomi gang stueetage'
 mac='4C:65:A8:DB:9F:A6'
 
 [[sensor_names]]
-name="Spisestue"
+name="Xiaomi spisestue"
 mac='4C:65:A8:DB:A4:4E'
 
 [[sensor_names]]
-name="Dagligstue"
+name="Xiaomi dagligstue"
 mac="4C:65:A8:DB:9D:13"
 
+[[sensor_names]]
+name="Rasmus værelse"
+mac="4C:65:A8:DB:A8:07"
+
+[[sensor_names]]
+name="Gamer rum"
+mac="4C:65:A8:DB:A6:85"
+
+[[sensor_names]]
+name="Udestue"
+mac="4C:65:A8:DB:A4:57"

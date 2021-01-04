@@ -30,6 +30,7 @@ CONF_REPORT_UNKNOWN = "report_unknown"
 CONF_WHITELIST = "whitelist"
 CONF_SENSOR_NAMES = "sensor_names"
 CONF_SENSOR_FAHRENHEIT = "sensor_fahrenheit"
+CONF_LOCALIZATION = "localization"
 
 # Default values for config
 DEFAULT_ROUNDING = True
