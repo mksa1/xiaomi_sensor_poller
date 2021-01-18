@@ -35,13 +35,13 @@ name="Xiaomi dagligstue"
 mac="4C:65:A8:DB:9D:13"
 
 [[sensor_names]]
-name="Rasmus værelse"
+name="Xiaomi Rasmus værelse"
 mac="4C:65:A8:DB:A8:07"
 
 [[sensor_names]]
-name="Gamer rum"
+name="Xiaomi gamer rum"
 mac="4C:65:A8:DB:A6:85"
 
 [[sensor_names]]
-name="Udestue"
+name="Xiaomi udestue"
 mac="4C:65:A8:DB:A4:57"

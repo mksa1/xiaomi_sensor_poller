@@ -96,10 +96,16 @@ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poet
 ```
 
 ## Poller setup
-``` shell
-git clone https://github.com/mksa1981/xioami_sensor_poller.git
+Package requirements:
+- git
+- python3
+- python3-distutils
+- python3-dev
 
-cd xioami_sensor_poller
+``` shell
+git clone https://github.com/mksa1981/xiaomi_sensor_poller.git
+
+cd xiaomi_sensor_poller
 poetry install
 
 # Rootless access to HCI (BlueTooth) device for python3 executable
