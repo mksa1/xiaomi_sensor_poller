@@ -45,3 +45,11 @@ mac="4C:65:A8:DB:A6:85"
 [[sensor_names]]
 name="Xiaomi udestue"
 mac="4C:65:A8:DB:A4:57"
+
+[[sensor_names]]
+name="Xiaomi bryggers"
+mac="4C:65:A8:DB:91:EC"
+
+[[sensor_names]]
+name="Xiaomi toilet"
+mac="4C:65:A8:DB:A7:94"
