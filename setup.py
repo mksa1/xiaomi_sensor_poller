@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="xiaomi_poller", # Replace with your own username
-    version="0.0.1",
+    version="0.0.2",
     author="Mikael Andersen",
     author_email="andersen.mikael@gmail.com",
     description="BLE scanner for Xiaomi devices",
