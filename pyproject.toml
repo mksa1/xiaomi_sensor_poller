@@ -7,12 +7,12 @@ authors = ["Mikael Andersen <andersen.mikael@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.7"
 paho-mqtt = "1.5.1"
-dynaconf = "3.1.2"
 aioblescan = "0.2.6"
 pycryptodomex = "3.9.9"
 voluptuous = "0.12.0"
-dt-utils="0.0.3"
-numpy="1.18.1"
+dt-utils = "0.0.3"
+numpy = "1.18.1"
+pyyaml = "^5.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

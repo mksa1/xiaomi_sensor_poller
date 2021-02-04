@@ -388,8 +388,9 @@ class BLEScanner:
 
     def start(self, config):
         """Start receiving broadcasts."""
-        active_scan = config.as_bool(CONF_ACTIVE_SCAN)
-        hci_interfaces = config(CONF_HCI_INTERFACE)
+        self.config = config
+        active_scan = config[CONF_ACTIVE_SCAN]
+        hci_interfaces = config[CONF_HCI_INTERFACE]
         self.hcidump_data.clear()
         _LOGGER.debug("Spawning HCIdump thread(s).")
         for hci_int in hci_interfaces:
@@ -447,8 +448,7 @@ class BLEScanner:
     def setup_platform(self, config, discovery_info=None):
         """Set up the sensor platform."""
         # Logging configuration
-        logging.config.fileConfig(fname=config.logging_conf, disable_existing_loggers=False)
-        self.config = config
+        # self.config = config
 
         def reverse_mac(rmac):
             """Change LE order to BE."""
@@ -847,9 +847,9 @@ class MeasuringSensor():
     def get_sensorname(self):
         """Set sensor name."""
         fmac = ":".join(self.mac[i: i + 2] for i in range(0, len(self.mac), 2))
-        for sensors in self.config[CONF_SENSOR_NAMES]:
-            if fmac == sensors.mac:
-                custom_name = sensors.name
+        for name, mac in self.config[CONF_SENSOR_NAMES].items():
+            if fmac == mac:
+                custom_name = name
                 _LOGGER.debug(
                     "Name of %s sensor with mac adress %s is set to: %s",
                     self.device_class,

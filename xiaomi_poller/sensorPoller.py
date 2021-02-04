@@ -22,20 +22,19 @@ from xiaomi_poller.const import (
 )
 
 # Logging configuration
-logging.config.fileConfig(fname=settings.logging_conf, disable_existing_loggers=False)
+logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 _LOGGER = logging.getLogger()
 
 
 # Initialize MQTT connection. Return MQTT client
 def init_mqtt_connection(settings):
-    mqtt_server = settings.mqtt_server
-    mqtt_user = settings.mqtt_user
-    mqtt_pass = settings.mqtt_pass
-    mqtt_port = settings.mqtt_port
-    mqtt_timeout = settings.mqtt_timeout
+    mqtt_server = settings['host']
+    mqtt_user = settings['username']
+    mqtt_pass = settings['password']
+    mqtt_port = settings['port']
     client = mqtt.Client()
     client.username_pw_set(mqtt_user, mqtt_pass)
-    client.connect(mqtt_server, mqtt_port, mqtt_timeout)
+    client.connect(mqtt_server, mqtt_port)
     return client
 
 
@@ -48,7 +47,7 @@ def process_data(scanner, mqtt_client):
     # Get current list of sensors
     sensors_by_mac = scanner.get_sensors()
 
-    base_state_topic = settings.mqtt_base_topic
+    base_state_topic = settings['mqtt']['base_topic']
 
     # Loop through sensors and send Discovery Announcement
     for mac in sensors_by_mac:
@@ -125,15 +124,16 @@ def main():
     scanner = misensor.BLEScanner()
 
     # Setup passive scanner platform
-    scanner.setup_platform(settings)
+    scanner.setup_platform(settings['sensor'])
 
     # Initialize MQTT client
-    mqtt_client = init_mqtt_connection(settings)
+    mqtt_client = init_mqtt_connection(settings['mqtt'])
 
     # Continually process BLE data
+    update_interval = settings['sensor']['update_interval']
     while True:
         process_data(scanner, mqtt_client)
-        sleep(settings.UPDATE_INTERVAL - time.time() % settings.update_interval)
+        sleep(update_interval - time.time() % update_interval)
 
 
 if __name__ == "__main__":
