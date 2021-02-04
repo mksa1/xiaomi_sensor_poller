@@ -1,0 +1,45 @@
+mqtt:
+  host: 192.168.1.69
+  port: 1883
+  username: mqtt_pi
+  password: mqtt
+  #ca_cert: /etc/ssl/certs/ca-certificates.crt # Uncomment to enable MQTT TLS, update path to appropriate location.
+  #ca_verify: False              # Verify TLS certificate chain and host, disable for testing with self-signed certificates, default to True
+  topic_prefix: h         # All messages will have that prefix added, remove if you dont need this.
+  client_id: bt-mqtt-gateway1
+  availability_topic: lwt_topic
+
+
+sensor_config:
+  topic: homeassistant
+  retain: true
+topic_subscription:
+  update_all:
+    topic: homeassistant/status
+    payload: online
+command_timeout: 60           # Timeout for worker operations. Can be removed if the default of 35 seconds is sufficient.
+workers:
+  lywsdcgq_homeassistant:
+    args:
+      devices:
+        xiaomi_spisestue: 4C:65:A8:DB:A4:4E
+        xiaomi_kokken_kontor: 4C:65:A8:DB:A8:74
+        xiaomi_gang_stueetage: 4C:65:A8:DB:9F:A6
+        xiaomi_dagligstue: 4C:65:A8:DB:9D:13
+        xiaomi_udestue: 4C:65:A8:DB:A4:57
+      poller_settings:
+        topic_prefix: mithermometer
+        rounding: true
+        decimals: 1
+        period: 60
+        log_spikes: false
+        use_median: false
+        active_scan: false
+        hci_interface: [ 0 ]
+        batt_entities: true
+        encryptors: {}
+        report_unknown: false
+        whitelist: false
+        sensor_fahrenheit: {}
+      per_device_timeout: 15            # Optional override of globally set per_device_timeout.
+    update_interval: 60
