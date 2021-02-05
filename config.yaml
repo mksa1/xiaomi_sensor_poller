@@ -1,5 +1,5 @@
 mqtt:
-  host: 192.168.1.69
+  host: 192.168.1.70
   port: 1883
   username: mqtt_pi
   password: mqtt
@@ -19,17 +19,18 @@ sensor:
     xiaomi_dagligstue: 4C:65:A8:DB:9D:13
     xiaomi_udestue: 4C:65:A8:DB:A4:57
   poller_settings:
-  topic_prefix: mithermometer
-  rounding: true
-  decimals: 1
-  period: 60
-  log_spikes: false
-  use_median: false
-  active_scan: false
-  hci_interface: [ 0 ]
-  batt_entities: true
-  encryptors: {}
-  report_unknown: false
-  whitelist: false
-  sensor_fahrenheit: {}
+    rounding: true
+    decimals: 1
+    period: 60
+    log_spikes: false
+    use_median: false
+    active_scan: false
+    hci_interface: [ 0 ]
+    batt_entities: true
+    encryptors: {}
+    report_unknown: false
+    whitelist: false
+    sensor_fahrenheit: {}
+    topic_prefix: mithermometer
   update_interval: 60
+  
