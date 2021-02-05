@@ -445,10 +445,11 @@ class BLEScanner:
     def get_sensors(self):
         return self.sensors_by_mac
 
-    def setup_platform(self, config, discovery_info=None):
+    def setup_platform(self, devices, config, discovery_info=None):
         """Set up the sensor platform."""
         # Logging configuration
-        # self.config = config
+        self.config = config
+        self.devices = devices
 
         def reverse_mac(rmac):
             """Change LE order to BE."""
@@ -844,21 +845,6 @@ class MeasuringSensor():
         """Return a unique ID."""
         return self._unique_id
 
-    def get_sensorname(self):
-        """Set sensor name."""
-        fmac = ":".join(self.mac[i: i + 2] for i in range(0, len(self.mac), 2))
-        for name, mac in self.config[CONF_SENSOR_NAMES].items():
-            if fmac == mac:
-                custom_name = name
-                _LOGGER.debug(
-                    "Name of %s sensor with mac adress %s is set to: %s",
-                    self.device_class,
-                    fmac,
-                    custom_name,
-                )
-                return custom_name
-        return self.mac
-
 
 class TemperatureSensor(MeasuringSensor):
     """Representation of a sensor."""
@@ -866,7 +852,6 @@ class TemperatureSensor(MeasuringSensor):
     def __init__(self, config, mac):
         "Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_temperature_{}".format(mac.lower())
         self._unique_id = "t_" + self._name
         self._unit_of_measurement = unit_of_measurement(config, mac)
@@ -879,7 +864,6 @@ class HumiditySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_humidity_{}".format(mac.lower())
         self._unique_id = "h_" + self._name
         self._unit_of_measurement = PERCENTAGE
@@ -892,7 +876,6 @@ class MoistureSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_moisture_{}".format(mac.lower())
         self._unique_id = "m_" + self._name
         self._unit_of_measurement = PERCENTAGE
@@ -905,7 +888,6 @@ class ConductivitySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_conductivity_{}".format(mac.lower())
         self._unique_id = "c_" + self._name
         self._unit_of_measurement = CONDUCTIVITY
@@ -923,7 +905,6 @@ class IlluminanceSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_illuminance_{}".format(mac.lower())
         self._unique_id = "l_" + self._name
         self._unit_of_measurement = "lx"
@@ -936,7 +917,6 @@ class FormaldehydeSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_formaldehyde_{}".format(mac.lower())
         self._unique_id = "f_" + self._name
         self._unit_of_measurement = "mg/m³"
@@ -954,7 +934,6 @@ class BatterySensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_battery_{}".format(mac.lower())
         self._unique_id = "batt__" + self._name
         self._unit_of_measurement = PERCENTAGE
@@ -967,7 +946,6 @@ class ConsumableSensor(MeasuringSensor):
     def __init__(self, config, mac):
         """Initialize the sensor."""
         super().__init__(config, mac)
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_consumable_{}".format(mac.lower())
         self._unique_id = "cn__" + self._name
         self._unit_of_measurement = PERCENTAGE
@@ -984,7 +962,6 @@ class SwitchBinarySensor():
 
     def __init__(self, config, mac):
         """Initialize the sensor."""
-        self._sensor_name = super().get_sensorname()
         self._name = "mi_switch_{}".format(mac.lower())
         self._state = None
         self._unique_id = "sw_" + self._name
