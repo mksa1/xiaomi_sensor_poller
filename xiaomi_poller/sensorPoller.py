@@ -42,7 +42,7 @@ def process_data(scanner, mqtt_client):
     _LOGGER.debug("Started processing data at %s", datetime.utcnow())
 
     # Trigger update of sensors
-    scanner.update_ble(datetime.utcnow())
+    scanner.update_ble()
 
     # Get current list of sensors
     sensors_by_mac = scanner.get_sensors()

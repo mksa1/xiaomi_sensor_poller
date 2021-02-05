@@ -494,7 +494,7 @@ class BLEScanner:
         self.lpacket_cntr = {}
         sleep(1)
         self.whitelist = whitelist
-        self.update_ble(datetime.utcnow())
+        self.update_ble()
         # Return successful setup
         return True
 
@@ -546,7 +546,7 @@ class BLEScanner:
             error = err
         return success, error
 
-    def update_ble(self, now):
+    def update_ble(self):
         """Lookup Bluetooth LE devices and update status."""
         _LOGGER.debug("update_ble called")
         try:
