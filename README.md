@@ -114,12 +114,7 @@ setcap_permissions.sh
 
 
 ## Configuration
-Configuration is handled through DynaConf in settings.toml and .secrets.toml. 
-TOML based format - https://learnxinyminutes.com/docs/toml/
-
-Copy .secrets.toml.sample to .secrets.toml and adjust MQTT password.
-
-Logging is configured in logging.conf
+Configuration is based on YAML. See example below.
 
 ### MQTT configuration (mqtt:)
 
@@ -224,6 +219,40 @@ sensor:
     xiaomi_dagligstue: 4C:65:A8:DB:9D:13
     xiaomi_udestue: 4C:65:A8:DB:A4:57
 ```
+
+Full config example
+``` yaml
+mqtt:
+  host: 192.168.1.69
+  port: 1883
+  username: mqtt_pi
+  password: mqtt   # Change to reflect your password
+  base_topic: homeassistant
+
+
+sensor:
+  update_interval: 60
+  devices:
+    xiaomi_spisestue: 4C:65:A8:DB:A4:4E
+    xiaomi_kokken_kontor: 4C:65:A8:DB:A8:74
+    xiaomi_gang_stueetage: 4C:65:A8:DB:9F:A6
+    xiaomi_dagligstue: 4C:65:A8:DB:9D:13
+    xiaomi_udestue: 4C:65:A8:DB:A4:57
+  poller_settings:
+    rounding: true
+    decimals: 1
+    period: 60
+    log_spikes: false
+    use_median: false
+    active_scan: false
+    hci_interface: [ 0 ]
+    batt_entities: true
+    encryptors: {}
+    report_unknown: false
+    whitelist: false
+    sensor_fahrenheit: {}
+```
+
 
 # Running the poller
 
