@@ -127,7 +127,7 @@ def main():
     scanner.setup_platform(settings['sensor']['devices'], settings['sensor']['poller_settings'])
 
     # Initialize MQTT client
-    mqtt_client = init_mqtt_connection( settings['mqtt'])
+    mqtt_client = init_mqtt_connection(settings['mqtt'])
 
     # Continually process BLE data
     update_interval = settings['sensor']['update_interval']
