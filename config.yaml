@@ -7,6 +7,7 @@ mqtt:
 
 
 sensor:
+  update_interval: 60
   devices:
     xiaomi_spisestue: 4C:65:A8:DB:A4:4E
     #xiaomi_kokken_kontor: 4C:65:A8:DB:A8:74
@@ -26,5 +27,5 @@ sensor:
     report_unknown: false
     whitelist: false
     sensor_fahrenheit: {}
-  update_interval: 60
+ 
   
