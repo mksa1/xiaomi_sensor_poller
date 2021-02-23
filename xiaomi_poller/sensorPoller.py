@@ -58,7 +58,7 @@ def process_data(scanner, mqtt_client):
             discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor.name, sensor.device_class)
             data = sensor.device_state_attributes
             payload = OrderedDict()
-            payload['name'] = "{} {}".format(sensor.sensor_name, sensor.device_class)
+            payload['name'] = sensor.name
             payload['unique_id'] = "{}-{}".format(mac.lower().replace(":", ""), sensor.device_class)
             payload['unit_of_measurement'] = sensor.unit_of_measurement
             payload['device_class'] = sensor.device_class
