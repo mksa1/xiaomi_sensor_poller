@@ -3,12 +3,7 @@ mqtt:
   port: 1883
   username: mqtt_pi
   password: mqtt   # Change to reflect your password
-  #ca_cert: /etc/ssl/certs/ca-certificates.crt # Uncomment to enable MQTT TLS, update path to appropriate location.
-  #ca_verify: False              # Verify TLS certificate chain and host, disable for testing with self-signed certificates, default to True
-  topic_prefix: h         # All messages will have that prefix added, remove if you dont need this.
   base_topic: homeassistant
-  client_id: bt-mqtt-gateway1
-  availability_topic: lwt_topic
 
 
 sensor:
@@ -31,6 +26,5 @@ sensor:
     report_unknown: false
     whitelist: false
     sensor_fahrenheit: {}
-    topic_prefix: mithermometer
   update_interval: 60
   
