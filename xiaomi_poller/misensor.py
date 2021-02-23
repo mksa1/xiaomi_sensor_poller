@@ -13,7 +13,6 @@ from typing import (
 
 # Third party imports
 from Cryptodome.Cipher import AES
-from datetime import datetime
 from threading import Thread
 from time import sleep
 import aioblescan as aiobs
