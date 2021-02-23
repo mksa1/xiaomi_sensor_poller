@@ -121,34 +121,28 @@ Copy .secrets.toml.sample to .secrets.toml and adjust MQTT password.
 
 Logging is configured in logging.conf
 
-### Generic configuration
+### MQTT configuration (mqtt:)
 
-#### mqtt_server
+#### host
   (string)(required) Point to your MQTT broker
 
-#### mqtt_user
+#### username
   
   (string)(required) MQTT user.
 
-#### mqtt_port
+#### port
  
   (positive integer))(required) MQTT port
 
-#### mqtt_timeout
-  
-  (positive integer))(required) MQTT timeout
-
-#### mqtt_base_topic
+#### base_topic
   
   (string)(required) This is used to specifuc the prefix of the MQTT topic for Home Assistant discovery messages.
+
+### Sensor configuration (sensor:)
 
 #### update_interval
   
   (positive integer)(required) Specifiy how often (seconds) the poller should send updates to Home Assistant.
-
-#### logging_conf
-  
-  (string)(required) Specify the logging framework configuration file. Default `logging.conf`
 
 #### rounding
  
@@ -160,13 +154,13 @@ Logging is configured in logging.conf
 
 #### period
 
-   (positive integer)(Optional) The period in seconds during which the sensor readings are collected and transmitted to Home Assistant after averaging. Default value: 60.
+   (positive integer)(Optional) The period in seconds during which the sensor readings are collected and transmitted after averaging. Default value: 60.
 
    *To clarify the difference between the sensor broadcast interval and the component measurement period: The LYWSDCGQ transmits 20-25 valuable BT LE messages (RSSI -75..-70 dBm). During the period = 60 (seconds), the component accumulates all these 20-25 messages, and after the 60 seconds expires, averages them and updates the sensor status in Home Assistant. The period does not affect the consumption of the sensor. It only affects the Home Assistant sensor update rate and the number of averaged values. We cannot change the frequency with which sensor sends data.*
 
 #### log_spikes
 
-   (boolean)(Optional) Puts information about each erroneous spike in the Home Assistant log. Default value: False
+   (boolean)(Optional) Puts information about each erroneous spike in the log. Default value: False
   
    *There are reports (pretty rare) that some sensors tend to sometimes produce erroneous values that differ markedly from the actual ones. Therefore, if you see inexplicable sharp peaks or dips on the temperature or humidity graph, I recommend that you enable this option so that you can see in the log which values were qualified as erroneous. The component discards values that exceeds the sensor’s measurement capabilities. These discarded values are given in the log records when this option is enabled. If erroneous values are within the measurement capabilities (-40..60°C and 0..100%H), there are no messages in the log. If your sensor is showing this, there is no other choice but to calculate the average as the median (next option).*
 
@@ -185,10 +179,9 @@ Logging is configured in logging.conf
    (positive integer or list of positive integers)(Optional) This parameter is used to select the bt-interface used. 0 for hci0, 1 for hci1 and so on. On most systems, the interface is hci0. In addition, if you need to collect data from several interfaces, you can specify a list of interfaces:
 
 ```yaml
-ble_monitor:
-  hci_interface:
-    - 0
-    - 1
+sensor:
+  poller_settings:
+    hci_interface: [ 0 ]
 ```
 
    Default value: 0
@@ -201,35 +194,35 @@ ble_monitor:
 
    (boolean)(Optional) By default, the component creates entities for all discovered, supported sensors. However, situations may arise where you need to limit the list of sensors. For example, when you receive data from neighboring sensors, or when data from part of your sensors are received using other equipment, and you don't want to see entities you do not need. To resolve this issue, simply add an entry of each MAC-address of the sensors you need under `sensor_names`, by using the `mac` option, and set the `whitelist` option to True:
 
-```toml
-whitelist: True
-[[sensor_names]]
-name='kitchen'
-mac='4C:65:A8:DB:A8:74'
-
-[[sensor_names]]
-name='hall'
-mac='4C:65:A8:DB:9F:A6'
+```yaml
+sensor:
+  devices:
+    xiaomi_spisestue: 4C:65:A8:DB:A4:4E
+  poller_settings:
+    ...
+    whitelist: true
+    ...
+update_interval: 60
 ```
 
 Data from sensors with other addresses will be ignored. Default value: True
 
 #### report_unknown
 
-   (boolean)(Optional) This option is needed primarily for those who want to request an implementation of device support that is not in the list of [supported sensors](#supported-sensors). If you set this parameter to `True`, then the component will log all messages from unknown Xiaomi ecosystem devices to the Home Assitant log (`logger` component must be enabled). **Attention!** Enabling this option can lead to huge output to the Home Assistant log, do not enable it if you do not need it! Details in the [FAQ](https://github.com/custom-components/ble_monitor/blob/master/faq.md#my-sensor-from-the-xiaomi-ecosystem-is-not-in-the-list-of-supported-ones-how-to-request-implementation). Default value: False
+   (boolean)(Optional) This option is needed primarily for those who want to request an implementation of device support that is not in the list of [supported sensors](#supported-sensors). If you set this parameter to `True`, then the component will log all messages from unknown Xiaomi ecosystem devices to the Home Assitant log (`logger` component must be enabled). Default value: False
 
-### Sensor configuration
+### Sensor configuration (sensor: devices:)
 #### sensor_names
-    (array of tables)(optional) This option serves as a map from sensor mac to a frindly name but aslo serves as a list of whitelisted sensors. Encryption key is only needed for devices where encryption is used. See option `whitelist`. Note that the format is a list of tables entries
-```
-[[sensor_names]]
-name='kitchen'
-mac='4C:65:A8:DB:A8:74'
-encryption_key='217C568CF5D22808DA20181502D84C1B'
+    (array of tables)(optional) This option serves as a map from sensor mac to a frindly name but aslo serves as a list of whitelisted sensors.
 
-[[sensor_names]]
-name='hall'
-mac='4C:65:A8:DB:9F:A6'
+``` yaml
+sensor:
+  devices:
+    xiaomi_spisestue: 4C:65:A8:DB:A4:4E
+    xiaomi_kokken_kontor: 4C:65:A8:DB:A8:74
+    xiaomi_gang_stueetage: 4C:65:A8:DB:9F:A6
+    xiaomi_dagligstue: 4C:65:A8:DB:9D:13
+    xiaomi_udestue: 4C:65:A8:DB:A4:57
 ```
 
 # Running the poller
